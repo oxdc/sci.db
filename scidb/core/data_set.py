@@ -75,7 +75,7 @@ class DataSet(Node):
         target.path.unlink()
         self.__data__.remove(target)
 
-    def clear_trash(self, conform=True, feedback=False):
+    def clear_trash(self, conform: bool = True, feedback: bool = False):
         if conform and not feedback:
             return
         for data_set in self.trash:

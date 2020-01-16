@@ -1,11 +1,18 @@
 import shutil
-import pathlib
+from pathlib import Path
 from uuid import uuid4, UUID
 from .metadata import Metadata, Properties
 
 
 class Node:
-    def __init__(self, node_name, node_type, parent=None, uuid=None, deleted=None, metadata=None, properties=None):
+    def __init__(self,
+                 node_name: str,
+                 node_type: str,
+                 parent=None,
+                 uuid: [None, UUID] = None,
+                 deleted: [None, bool] = None,
+                 metadata: [None, Metadata] = None,
+                 properties: [None, Properties] = None):
         self.__node_name__ = node_name
         self.__node_type__ = node_type
         self.__parent__ = parent
@@ -25,23 +32,23 @@ class Node:
             self.properties['deleted'] = False
 
     @property
-    def uuid(self):
+    def uuid(self) -> UUID:
         return self.__uuid__
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self.__node_name__
 
-    def rename(self, new_name):
+    def rename(self, new_name: str):
         self.move_storage(self.__parent__.path / new_name)
         self.__node_name__ = new_name
         self.properties['node_name'] = new_name
 
     @property
-    def node_type(self):
+    def node_type(self) -> str:
         return self.__node_type__
 
-    def is_type(self, type_to_compare):
+    def is_type(self, type_to_compare: str) -> bool:
         return self.__node_type__ == type_to_compare
 
     @property
@@ -53,15 +60,15 @@ class Node:
         self.__parent__ = new_parent
 
     @property
-    def path(self):
+    def path(self) -> Path:
         return self.__parent__.path / self.__node_name__
 
     @property
-    def node_id(self):
+    def node_id(self) -> UUID:
         return self.__uuid__
 
     @property
-    def deleted(self):
+    def deleted(self) -> bool:
         return self.properties['deleted']
 
     def delete(self):
@@ -73,34 +80,34 @@ class Node:
     def init_storage(self):
         self.path.mkdir(parents=True, exist_ok=True)
 
-    def move_storage(self, new_path):
-        shutil.move(self.path, new_path)
+    def move_storage(self, new_path: [str, Path]):
+        shutil.move(str(self.path), str(new_path))
 
-    def purge_storage(self, confirm=True, feedback=False):
+    def purge_storage(self, confirm: bool = True, feedback: bool = False):
         if confirm and not feedback:
             return
         self.delete()
-        shutil.rmtree(self.path)
+        shutil.rmtree(str(self.path))
 
-    def __eq__(self, other):
+    def __eq__(self, other: 'Node'):
         return self.__uuid__ == other.uuid
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return UUID(self.__uuid__).int
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"{self.__node_type__}('{self.__node_name__}')"
 
 
 class Root:
-    def __init__(self, root_path):
-        if isinstance(root_path, pathlib.Path):
+    def __init__(self, root_path: [str, Path]):
+        if isinstance(root_path, Path):
             self.__root_path__ = root_path
         else:
-            self.__root_path__ = pathlib.Path(root_path)
+            self.__root_path__ = Path(root_path)
 
     @property
-    def path(self):
+    def path(self) -> Path:
         return self.__root_path__
 
     def init_storage(self):
