@@ -1,6 +1,7 @@
 import json
 import yaml
 import enum
+from typing import Callable, Any
 
 
 class MetadataFileType(enum.Enum):
@@ -9,33 +10,37 @@ class MetadataFileType(enum.Enum):
 
 
 class ObservableDict(dict):
-    def __init__(self, init_dict, callback):
+    def __init__(self, init_dict: dict, callback: Callable):
         self.__callback__ = callback
         for item, value in init_dict.items():
             if isinstance(value, dict):
                 init_dict[item] = ObservableDict(value, callback)
         super().__init__(init_dict)
 
-    def __setitem__(self, item, value):
+    def __setitem__(self, item: str, value: Any):
         value = ObservableDict(value, self.__callback__) if isinstance(value, dict) else value
         super().__setitem__(item, value)
         self.__callback__(item, value)
 
-    def __getitem__(self, item):
+    def __getitem__(self, item: str) -> Any:
         return super().__getitem__(item)
 
-    def set(self, item, value):
+    def set(self, item: str, value: Any):
         self.__setitem__(item, value)
 
-    def get(self, item):
+    def get(self, item: str) -> Any:
         return self.__getitem__(item)
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
         return {key: dict(value) if isinstance(value, ObservableDict) else value for key, value in self.items()}
 
 
 class NodeDict:
-    def __init__(self, node, filename, data=None, file_type=MetadataFileType.Json):
+    def __init__(self,
+                 node,
+                 filename: str,
+                 data: [None, dict] = None,
+                 file_type: MetadataFileType = MetadataFileType.Json):
         self.__node__ = node
         self.__filename__ = filename
         self.__data__ = ObservableDict({}, self.callback)
@@ -60,7 +65,7 @@ class NodeDict:
                 else:
                     raise NotImplementedError('The type is not supported.')
 
-    def callback(self, item=None, value=None):
+    def callback(self, **kwargs):
         full_path = str(self.__node__.path / self.__filename__)
         with open(full_path, mode='w') as file:
             if self.__file_type__ == MetadataFileType.Yaml:
@@ -70,28 +75,31 @@ class NodeDict:
             else:
                 raise NotImplementedError('The type is not supported.')
 
-    def __setitem__(self, item, value):
+    def __setitem__(self, item: str, value: Any):
         self.__data__[item] = value
 
-    def __getitem__(self, item):
+    def __getitem__(self, item: str) -> Any:
         return self.__data__[item]
 
-    def __contains__(self, item):
+    def __contains__(self, item: str):
         return item in self.__data__
 
-    def set(self, item, value):
+    def set(self, item: str, value: Any):
         self.__setitem__(item, value)
 
-    def get(self, item):
+    def get(self, item: str) -> Any:
         return self.__getitem__(item)
 
     @property
-    def data(self):
+    def data(self) -> ObservableDict:
         return self.__data__
 
 
 class Metadata(NodeDict):
-    def __init__(self, node, data=None, file_type=MetadataFileType.Json):
+    def __init__(self,
+                 node,
+                 data: [None, dict] = None,
+                 file_type: MetadataFileType = MetadataFileType.Json):
         if file_type == MetadataFileType.Yaml:
             filename = 'metadata.yml'
         elif file_type == MetadataFileType.Json:
@@ -102,7 +110,10 @@ class Metadata(NodeDict):
 
 
 class Properties(NodeDict):
-    def __init__(self, node, data=None, file_type=MetadataFileType.Json):
+    def __init__(self,
+                 node,
+                 data: [None, dict] = None,
+                 file_type: MetadataFileType = MetadataFileType.Json):
         if file_type == MetadataFileType.Yaml:
             filename = 'properties.yml'
         elif file_type == MetadataFileType.Json:

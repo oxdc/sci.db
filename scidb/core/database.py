@@ -9,6 +9,7 @@ class Database(Root):
         self.__db_version__ = version
         self.__buckets__ = set()
         super().__init__(path)
+        self.init_storage()
         self.init_buckets()
 
     def init_buckets(self):

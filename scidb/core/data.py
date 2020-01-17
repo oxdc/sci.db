@@ -7,6 +7,10 @@ class Data:
     def __init__(self, data_name: str, parent):
         self.__data_name__ = data_name
         self.__parent__ = parent
+        self.init_metadata()
+
+    def init_metadata(self):
+        self.__parent__.metadata[self.__data_name__] = dict()
 
     @property
     def path(self) -> Path:
