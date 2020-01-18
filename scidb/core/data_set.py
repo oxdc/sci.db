@@ -1,6 +1,7 @@
 from .low.node import Node
 from .data import Data
 from .low.metadata import Metadata, Properties
+from uuid import UUID
 from typing import Set, List
 
 
@@ -8,7 +9,7 @@ class DataSet(Node):
     def __init__(self,
                  data_set_name: str,
                  parent,
-                 uuid: [None, str] = None,
+                 uuid: [None, str, UUID] = None,
                  deleted: [None, bool] = None,
                  metadata: [None, Metadata] = None,
                  properties: [None, Properties] = None):

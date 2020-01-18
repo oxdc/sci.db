@@ -16,7 +16,7 @@ class Node:
         self.__node_name__ = node_name
         self.__node_type__ = node_type
         self.__parent__ = parent
-        self.__uuid__ = uuid if uuid else str(uuid4())
+        self.__uuid__ = str(uuid) if uuid else str(uuid4())
         self.init_storage()
         self.metadata = metadata if metadata and isinstance(metadata, Metadata) else Metadata(self)
         self.properties = properties if properties and isinstance(properties, Properties) else Properties(self)
@@ -32,7 +32,7 @@ class Node:
             self.properties['deleted'] = False
 
     @property
-    def uuid(self) -> UUID:
+    def uuid(self) -> str:
         return self.__uuid__
 
     @property
@@ -64,7 +64,7 @@ class Node:
         return self.__parent__.path / self.__node_name__
 
     @property
-    def node_id(self) -> UUID:
+    def node_id(self) -> str:
         return self.__uuid__
 
     @property

@@ -65,7 +65,5 @@ class Database(Root):
         self.__buckets__ = set(self.buckets)
 
     def init_storage(self):
-        try:
+        if not self.path.exists():
             super().init_storage()
-        except FileExistsError:
-            raise FileExistsError('The directory contains files.')

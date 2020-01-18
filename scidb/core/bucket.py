@@ -1,6 +1,7 @@
 from .low.node import Node
 from .data_set import DataSet
 from .low.metadata import Metadata, Properties
+from uuid import UUID
 from typing import Set
 
 
@@ -8,7 +9,7 @@ class Bucket(Node):
     def __init__(self,
                  bucket_name: str,
                  parent,
-                 uuid: [None, str] = None,
+                 uuid: [None, str, UUID] = None,
                  deleted: [None, bool] = None,
                  metadata: [None, Metadata] = None,
                  properties: [None, Properties] = None):

@@ -65,7 +65,7 @@ class NodeDict:
                 else:
                     raise NotImplementedError('The type is not supported.')
 
-    def callback(self, **kwargs):
+    def callback(self, item: str, value: Any):
         full_path = str(self.__node__.path / self.__filename__)
         with open(full_path, mode='w') as file:
             if self.__file_type__ == MetadataFileType.Yaml:
