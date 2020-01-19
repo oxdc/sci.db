@@ -2,10 +2,10 @@
 Command list:
 
 bucket select [<name> | <uuid>]
-bucket add <name>
+bucket create <name>
 bucket list [all | deleted]
 bucket rm [<name> | <uuid>]
-bucket clean [<name> | <uuid> | all]
+bucket clean [-f] [<name> | <uuid> | all]
 """
 
 from scidb.core import Database, Bucket
@@ -16,8 +16,8 @@ import scidb.client.global_env as global_env
 usage = """\
  1 | > bucket select [<name> | <uuid>]
    |   To select a bucket.
- 2 | > bucket add <name>
-   |   To add a bucket with given name.
+ 2 | > bucket create <name>
+   |   To create a bucket with given name.
  3 | > bucket list [all | deleted]
    |   To list (all / deleted) buckets.
  4 | > bucket rm [<name> | <uuid>]
@@ -34,10 +34,10 @@ To select a bucket.
 <uuid> | OPTIONAL | uuid of the bucket.
 """
 
-add_usage = """\
-> bucket add <name>
+create_usage = """\
+> bucket create <name>
 
-To add a bucket with given name.
+To create a bucket with given name.
 <name> | REQUIRED | name of the new bucket.
 """
 
@@ -84,18 +84,18 @@ def handler(args: List[str]):
             print(select_usage)
             return
         select_bucket(args[1])
-    elif args[0] == 'add':
+    elif args[0] == 'create':
         if len(args) != 2:
-            print(add_usage)
+            print(create_usage)
             return
-        add_bucket(args[1])
+        create_bucket(args[1])
     elif args[0] == 'list':
         if len(args) == 1:
             list_bucket()
         elif len(args) == 2 and args[1] in ['all', 'deleted']:
             list_bucket(args[1])
         else:
-            print(usage)
+            print(list_usage)
             return
     elif args[0] == 'rm':
         if len(args) != 2:
@@ -128,7 +128,7 @@ def select_bucket(name_or_uuid: str):
     global_env.SELECTED_BUCKET = global_env.CONNECTED_DATABASE.get_bucket(name_or_uuid, include_deleted=True)
 
 
-def add_bucket(bucket_name: str):
+def create_bucket(bucket_name: str):
     global_env.SELECTED_BUCKET = global_env.CONNECTED_DATABASE.add_bucket(bucket_name)
 
 
