@@ -11,7 +11,7 @@ dataset tree [<name> | <uuid>]
 dataset search [<name> | <uuid>]
 """
 
-from scidb.core import Database, Bucket, DataSet
+from scidb.core import Bucket, DataSet
 from typing import List, Set
 import scidb.client.global_env as global_env
 
