@@ -5,6 +5,7 @@ dataset create <name>
 dataset list [all | deleted]
 dataset cd [<name> | <uuid> | .. | parent ]
 dataset rm [<name> | <uuid>]
+dataset restore [<name> | <uuid> | all]
 dataset clean [-f] [<name> | <uuid> | all]
 dataset tree [<name> | <uuid>]
 dataset search [<name> | <uuid>]
@@ -24,11 +25,13 @@ usage = """\
    |   To navigate into / out of a directory.
  4 | > dataset rm [<name> | <uuid>]
    |   To delete a dataset with given name or uuid.
- 5 | > dataset clean [-f] [<name> | <uuid> | all]
+ 5 | > dataset restore [<name> | <uuid> | all]
+   |   To restore a deleted dataset.
+ 6 | > dataset clean [-f] [<name> | <uuid> | all]
    |   To delete trash of a dataset / all data sets.
- 6 | > dataset tree [<name> | <uuid> | . ]
+ 7 | > dataset tree [<name> | <uuid> | . ]
    |   To print a tree of a given dataset or current directory.
- 7 | > dataset search [<name> | <uuid>]
+ 8 | > dataset search [<name> | <uuid>]
    |   To search a dataset within current bucket.
 """
 
@@ -63,6 +66,15 @@ rm_usage = """\
 To delete a dataset with given name or uuid.
 <name> | OPTIONAL | name of the dataset,
 <uuid> | OPTIONAL | uuid of the dataset.
+"""
+
+restore_usage = """\
+> dataset restore [<name> | <uuid> | all]
+
+To restore a deleted dataset.
+<name> | OPTIONAL | name of the dataset,
+<uuid> | OPTIONAL | uuid of the dataset,
+all    | OPTIONAL | restore all data sets.
 """
 
 clean_usage = """\
@@ -119,7 +131,7 @@ def handler(args: List[str]):
             return
     elif args[0] == 'cd':
         if len(args) != 2:
-            print_tree(cd_usage)
+            print(cd_usage)
             return
         cd_data_set(args[1])
     elif args[0] == 'rm':
@@ -127,6 +139,14 @@ def handler(args: List[str]):
             print(rm_usage)
             return
         rm_data_set(args[1])
+    elif args[0] == 'restore':
+        if len(args) != 2:
+            print(restore_usage)
+            return
+        if 'all' in args:
+            restore_data_set()
+        else:
+            restore_data_set(args[1])
     elif args[0] == 'clean':
         if len(args) not in [2, 3]:
             print(clean_usage)
@@ -156,7 +176,7 @@ def handler(args: List[str]):
         search_data_set(args[1])
 
 
-def get_parent() -> DataSet:
+def get_parent() -> [Bucket, DataSet]:
     return global_env.SELECTED_BUCKET if global_env.CURRENT_DATASET is None else global_env.CURRENT_DATASET
 
 
@@ -209,6 +229,18 @@ def rm_data_set(name_or_uuid: str):
         data_set.delete()
 
 
+def restore_data_set(name_or_uuid: [str, None] = None):
+    if name_or_uuid is None:
+        for deleted in get_parent().trash:
+            deleted.restore()
+    else:
+        target = get_parent().get_data_set(name_or_uuid, include_deleted=True)
+        if target is not None:
+            target.restore()
+        else:
+            print('No such dataset.')
+
+
 def clean_data_set(name_or_uuid: [str, None], confirm: bool = True, feedback: bool = False):
     if confirm and not feedback:
         print('User cancelled.')
@@ -228,7 +260,7 @@ def print_tree(data_set: DataSet, depth: int = 0):
         prefix = ' |  ' * (depth - 1) + ' |--'
     else:
         prefix = ''
-    print(f'{prefix}{data_set.name} ({data_set.uuid})')
+    print(f'{prefix} # {data_set.name} ({data_set.uuid})')
     for child in data_set.data_sets:
         print_tree(child, depth=depth + 1)
 
@@ -244,17 +276,19 @@ def print_tree_of_data_set(name_or_uuid: str):
         print_tree(data_set)
 
 
-def print_search_results(target: [None, DataSet], path: List[Bucket, DataSet]):
+def print_search_results(target: [None, DataSet], path: List):
     if target is None:
         return
-    print(f'Found result: {target.name} ({target.uuid})')
-    print('path:')
+    print(f'@ Found result: {target.name} ({target.uuid})')
+    print('  path:')
     path_str = [f'{item.name} ({item.uuid})' for item in path]
     path_str = ' --> \n'.join(path_str)
     print(path_str)
 
 
-def search_data_set(name_or_uuid: str, parent: [None, Bucket, DataSet] = None, path: [None, List[Bucket, DataSet]] = None):
+def search_data_set(name_or_uuid: str,
+                    parent: [None, Bucket, DataSet] = None,
+                    path: [None, List] = None):
     if path is None:
         path = []
     if parent is None:
@@ -262,6 +296,7 @@ def search_data_set(name_or_uuid: str, parent: [None, Bucket, DataSet] = None, p
     path.append(parent)
     target = parent.get_data_set(name_or_uuid)
     if target is not None:
+        path.append(target)
         print_search_results(target, path)
     else:
         for child in parent.data_sets:

@@ -1,5 +1,6 @@
 from scidb.client.modules.database import handler as db_handler
 from scidb.client.modules.bucket import handler as bucket_handler
+from scidb.client.modules.data_set import handler as data_set_handler
 import re
 
 
@@ -22,10 +23,12 @@ if __name__ == "__main__":
         args = re.split(r'\s+', commands)
         if len(args) < 1:
             print(usage)
-        if args[0] == 'db':
+        if args[0] in ['db', 'database']:
             db_handler(args[1:])
-        elif args[0] == 'bucket':
+        elif args[0] in ['bk', 'bucket']:
             bucket_handler(args[1:])
+        elif args[0] in ['ds', 'dataset']:
+            data_set_handler(args[1:])
         elif args[0] == 'exit':
             break
         else:

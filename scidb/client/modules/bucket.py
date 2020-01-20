@@ -5,6 +5,7 @@ bucket select [<name> | <uuid>]
 bucket create <name>
 bucket list [all | deleted]
 bucket rm [<name> | <uuid>]
+bucket restore [<name> | <uuid> | all]
 bucket clean [-f] [<name> | <uuid> | all]
 """
 
@@ -22,7 +23,9 @@ usage = """\
    |   To list (all / deleted) buckets.
  4 | > bucket rm [<name> | <uuid>]
    |   To delete a bucket with given name or uuid.
- 5 | > bucket clean [-f] [<name> | <uuid> | all]
+ 5 | > bucket restore [<name> | <uuid> | all]
+   |   To restore a deleted bucket.
+ 6 | > bucket clean [-f] [<name> | <uuid> | all]
    |   To delete trash of a bucket / all buckets.
 """
 
@@ -55,6 +58,15 @@ rm_usage = """\
 To delete a bucket with given name or uuid.
 <name> | OPTIONAL | name of the bucket,
 <uuid> | OPTIONAL | uuid of the bucket.
+"""
+
+restore_usage = """\
+> bucket restore [<name> | <uuid> | all]
+
+To restore a deleted bucket.
+<name> | OPTIONAL | name of the bucket,
+<uuid> | OPTIONAL | uuid of the bucket,
+all    | OPTIONAL | restore all buckets.
 """
 
 clean_usage = """\
@@ -102,6 +114,14 @@ def handler(args: List[str]):
             print(rm_usage)
             return
         rm_bucket(args[1])
+    elif args[0] == 'restore':
+        if len(args) != 2:
+            print(restore_usage)
+            return
+        if 'all' in args:
+            restore_bucket()
+        else:
+            restore_bucket(args[1])
     elif args[0] == 'clean':
         if len(args) not in [2, 3]:
             print(clean_usage)
@@ -157,6 +177,18 @@ def rm_bucket(name_or_uuid: str):
     bucket = global_env.CONNECTED_DATABASE.get_bucket(name_or_uuid)
     if bucket is not None:
         bucket.delete()
+
+
+def restore_bucket(name_or_uuid: [str, None] = None):
+    if name_or_uuid is None:
+        for deleted in global_env.CONNECTED_DATABASE.trash:
+            deleted.restore()
+    else:
+        target = global_env.CONNECTED_DATABASE.get_bucket(name_or_uuid, include_deleted=True)
+        if target is not None:
+            target.restore()
+        else:
+            print('No such bucket.')
 
 
 def clean_bucket(name_or_uuid: [str, None], confirm: bool = True, feedback: bool = False):
