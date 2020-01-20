@@ -117,9 +117,46 @@ def handler(args: List[str]):
         else:
             print(list_usage)
             return
+    elif args[0] == 'cd':
+        if len(args) != 2:
+            print_tree(cd_usage)
+            return
+        cd_data_set(args[1])
+    elif args[0] == 'rm':
+        if len(args) != 2:
+            print(rm_usage)
+            return
+        rm_data_set(args[1])
+    elif args[0] == 'clean':
+        if len(args) not in [2, 3]:
+            print(clean_usage)
+            return
+        if '-f' in args:
+            args.remove('-f')
+            if args[1] == 'all':
+                clean_data_set(None, confirm=True, feedback=True)
+            else:
+                clean_data_set(args[1], confirm=True, feedback=True)
+        else:
+            if args[1] == 'all':
+                clean_data_set(None, confirm=True,
+                               feedback=input('Would you like to clean all data sets? Y/[N]') == 'Y')
+            else:
+                clean_data_set(args[1], confirm=True,
+                               feedback=input('Would you like to clean this dataset? Y/[N]') == 'Y')
+    elif args[0] == 'tree':
+        if len(args) != 2:
+            print(tree_usage)
+            return
+        print_tree_of_data_set(args[1])
+    elif args[0] == 'search':
+        if len(args) != 2:
+            print(search_usage)
+            return
+        search_data_set(args[1])
 
 
-def get_parent() -> [DataSet, Bucket]:
+def get_parent() -> DataSet:
     return global_env.SELECTED_BUCKET if global_env.CURRENT_DATASET is None else global_env.CURRENT_DATASET
 
 
@@ -146,3 +183,86 @@ def list_data_set(data_set_filter: [None, str] = None):
         print_data_sets(get_parent().trash)
     else:
         return
+
+
+def cd_data_set(target: str):
+    if target in ['..', 'parent']:
+        if isinstance(get_parent(), Bucket):
+            print('You cannot switch above buckets.')
+        else:
+            parent = get_parent().parent
+            if isinstance(parent, DataSet):
+                global_env.CURRENT_DATASET = parent
+            else:
+                global_env.CURRENT_DATASET = None
+    else:
+        data_set = get_parent().get_data_set(target)
+        if data_set is not None:
+            global_env.CURRENT_DATASET = data_set
+        else:
+            print('No such dataset.')
+
+
+def rm_data_set(name_or_uuid: str):
+    data_set = get_parent().get_data_set(name_or_uuid)
+    if data_set is not None:
+        data_set.delete()
+
+
+def clean_data_set(name_or_uuid: [str, None], confirm: bool = True, feedback: bool = False):
+    if confirm and not feedback:
+        print('User cancelled.')
+        return
+    if name_or_uuid is None:
+        get_parent().clear_trash(confirm, feedback)
+    else:
+        data_set = get_parent().get_data_set(name_or_uuid)
+        if data_set is None:
+            print('No such dataset.')
+        else:
+            data_set.clear_trash(confirm, feedback)
+
+
+def print_tree(data_set: DataSet, depth: int = 0):
+    if depth > 0:
+        prefix = ' |  ' * (depth - 1) + ' |--'
+    else:
+        prefix = ''
+    print(f'{prefix}{data_set.name} ({data_set.uuid})')
+    for child in data_set.data_sets:
+        print_tree(child, depth=depth + 1)
+
+
+def print_tree_of_data_set(name_or_uuid: str):
+    if name_or_uuid == '.':
+        data_set = get_parent()
+    else:
+        data_set = get_parent().get_data_set(name_or_uuid)
+    if data_set is None:
+        print('No such dataset.')
+    else:
+        print_tree(data_set)
+
+
+def print_search_results(target: [None, DataSet], path: List[Bucket, DataSet]):
+    if target is None:
+        return
+    print(f'Found result: {target.name} ({target.uuid})')
+    print('path:')
+    path_str = [f'{item.name} ({item.uuid})' for item in path]
+    path_str = ' --> \n'.join(path_str)
+    print(path_str)
+
+
+def search_data_set(name_or_uuid: str, parent: [None, Bucket, DataSet] = None, path: [None, List[Bucket, DataSet]] = None):
+    if path is None:
+        path = []
+    if parent is None:
+        parent = global_env.SELECTED_BUCKET
+    path.append(parent)
+    target = parent.get_data_set(name_or_uuid)
+    if target is not None:
+        print_search_results(target, path)
+    else:
+        for child in parent.data_sets:
+            search_data_set(name_or_uuid, child, path)
