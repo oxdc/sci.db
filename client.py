@@ -1,6 +1,7 @@
 from scidb.client.modules.database import handler as db_handler
 from scidb.client.modules.bucket import handler as bucket_handler
 from scidb.client.modules.data_set import handler as data_set_handler
+from scidb.client.modules.data import handler as data_handler
 import re
 
 
@@ -29,6 +30,8 @@ if __name__ == "__main__":
             bucket_handler(args[1:])
         elif args[0] in ['ds', 'dataset']:
             data_set_handler(args[1:])
+        elif args[0] in ['d', 'data']:
+            data_handler(args[1:])
         elif args[0] == 'exit':
             break
         else:

@@ -73,7 +73,10 @@ class DataSet(Node):
         for data in self.__data__:
             if data.name == name:
                 target = data
-        target.path.unlink()
+        if target is None:
+            return
+        if target.path.exists():
+            target.path.unlink()
         self.__data__.remove(target)
 
     def clear_trash(self, conform: bool = True, feedback: bool = False):

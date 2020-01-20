@@ -89,7 +89,7 @@ def handler(args: List[str]):
             return
         list_data()
     elif args[0] == 'rm':
-        if len(args) != 2:
+        if len(args) not in [2, 3]:
             print(rm_usage)
             return
         if '-f' in args:
@@ -148,10 +148,20 @@ def rm_data(name: str, confirm: bool = True, feedback: bool = False):
 
 
 def import_data(name: str, src_path: [str, Path], allow_overwrite: bool = False):
-    global_env.CURRENT_DATASET.add_data(name).import_file(src_path, allow_overwrite, confirm=True, feedback=True)
+    if global_env.CURRENT_DATASET.get_data(name) is not None and not allow_overwrite:
+        print('Overwrite is not permitted. Try with `-f`.')
+        return
+    if global_env.CURRENT_DATASET.get_data(name) is None:
+        global_env.CURRENT_DATASET.add_data(name)
+    global_env.CURRENT_DATASET.get_data(name).import_file(src_path, allow_overwrite, confirm=True, feedback=True)
 
 
 def export_data(name: str, dst_path: [str, Path], allow_overwrite: bool = False):
+    if not isinstance(dst_path, Path):
+        dst_path = Path(dst_path)
+    if dst_path.exists() and not allow_overwrite:
+        print('Overwrite is not permitted. Try with `-f`.')
+        return
     data = global_env.CURRENT_DATASET.get_data(name)
     if data is not None:
         data.export_file(dst_path, allow_overwrite)
