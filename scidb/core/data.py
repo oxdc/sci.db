@@ -1,4 +1,5 @@
 import shutil
+import hashlib
 from pathlib import Path
 from typing import TextIO, BinaryIO, IO
 
@@ -76,3 +77,15 @@ class Data:
         if Path(dst_path).exists() and not allow_overwrite:
             return
         shutil.copyfile(str(self.path), str(dst_path))
+
+    def sha1(self, buffer_size: int = 65536) -> [str, None]:
+        if not self.path.exists():
+            return None
+        sha1_hash = hashlib.sha1()
+        with open(str(self.path), 'rb') as file_reader:
+            while True:
+                data = file_reader.read(buffer_size)
+                if not data:
+                    break
+                sha1_hash.update(data)
+        return sha1_hash.hexdigest()
