@@ -15,11 +15,14 @@ class BackupBackend:
     def is_connected(self) -> bool:
         return self.__is_connected__
 
-    def create_backup(self):
+    def create_backup(self, **kwargs):
         raise NotImplementedError
 
-    def sync_backup(self):
+    def sync_backup(self, **kwargs):
         raise NotImplementedError
 
-    def fetch_backup(self):
+    def list_backups(self, **kwargs):
+        raise NotImplementedError
+
+    def fetch_backup(self, **kwargs):
         raise NotImplementedError

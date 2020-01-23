@@ -27,4 +27,4 @@ def iter_data(bucket_or_data_set: [Bucket, DataSet],
         if isinstance(child, DataSet):
             for data in child.data:
                 func(data, **kwargs)
-        iter_data_set(child, func, include_deleted, depth=None if depth is None else depth - 1, **kwargs)
+        iter_data(child, func, include_deleted, depth=None if depth is None else depth - 1, **kwargs)
