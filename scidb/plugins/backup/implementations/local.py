@@ -9,7 +9,7 @@ import json
 import shutil
 
 
-class LocalBackup(BackupBackend):
+class LocalBackend(BackupBackend):
     def __init__(self, db_name: str, db_path: [str, Path], backup_path: [str, Path]):
         self.__db_name__ = db_name
         self.__db_path__ = db_path if isinstance(db_path, Path) else Path(db_path)
