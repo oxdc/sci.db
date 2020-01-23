@@ -2,7 +2,7 @@ from scidb.client.modules.database import handler as db_handler
 from scidb.client.modules.bucket import handler as bucket_handler
 from scidb.client.modules.data_set import handler as data_set_handler
 from scidb.client.modules.data import handler as data_handler
-import re
+import shlex
 
 
 usage = """\
@@ -21,7 +21,7 @@ if __name__ == "__main__":
     print('Sci.DB client.')
     while True:
         commands = input('> ')
-        args = re.split(r'\s+', commands)
+        args = shlex.split(commands)
         if len(args) < 1:
             print(usage)
         if args[0] in ['db', 'database']:

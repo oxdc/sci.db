@@ -24,11 +24,9 @@ class LocalBackup(BackupBackend):
         self.__is_connected__ = True
 
     def create_backup(self):
-        path = self.__backup_path__ / f"db_backup_{datetime.now().strftime('%Y%m%d-%H%M%S')}"
-        path.mkdir(parents=True)
-        db_json = path / 'db.json'
-        obj_path = path / 'objects'
-        obj_path.mkdir(parents=True)
+        db_json = self.__backup_path__ / f"db_backup_{datetime.now().strftime('%Y%m%d-%H%M%S')}.json"
+        obj_path = self.__backup_path__ / 'objects'
+        obj_path.mkdir(parents=True, exist_ok=True)
         with open(str(db_json), 'w') as fp:
             json.dump(
                 obj=db_to_json(self.__db_name__, self.__db_path__),
