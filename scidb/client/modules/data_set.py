@@ -174,6 +174,9 @@ def handler(args: List[str]):
             print(search_usage)
             return
         search_data_set(args[1])
+    else:
+        print(usage)
+        return
 
 
 def get_parent() -> [Bucket, DataSet]:

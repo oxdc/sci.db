@@ -116,6 +116,9 @@ def handler(args: List[str]):
             export_data(args[1], args[2], allow_overwrite=True)
         else:
             export_data(args[1], args[2])
+    else:
+        print(usage)
+        return
 
 
 def get_current_dataset() -> DataSet:
