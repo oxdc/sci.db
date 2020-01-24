@@ -1,6 +1,7 @@
 import shutil
 from pathlib import Path
 from uuid import uuid4, UUID
+from typing import Union
 from .metadata import Metadata, Properties
 
 
@@ -9,10 +10,10 @@ class Node:
                  node_name: str,
                  node_type: str,
                  parent=None,
-                 uuid: [None, UUID] = None,
-                 deleted: [None, bool] = None,
-                 metadata: [None, Metadata] = None,
-                 properties: [None, Properties] = None):
+                 uuid: Union[None, UUID] = None,
+                 deleted: Union[None, bool] = None,
+                 metadata: Union[None, Metadata] = None,
+                 properties: Union[None, Properties] = None):
         self.__node_name__ = node_name
         self.__node_type__ = node_type
         self.__parent__ = parent
@@ -80,7 +81,7 @@ class Node:
     def init_storage(self):
         self.path.mkdir(parents=True, exist_ok=True)
 
-    def move_storage(self, new_path: [str, Path]):
+    def move_storage(self, new_path: Union[str, Path]):
         shutil.move(str(self.path), str(new_path))
 
     def purge_storage(self, confirm: bool = True, feedback: bool = False):
@@ -100,7 +101,7 @@ class Node:
 
 
 class Root:
-    def __init__(self, root_path: [str, Path]):
+    def __init__(self, root_path: Union[str, Path]):
         if isinstance(root_path, Path):
             self.__root_path__ = root_path
         else:

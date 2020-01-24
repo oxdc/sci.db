@@ -2,7 +2,7 @@ from scidb.plugins.backup.base.backend import BackupBackend
 from scidb.utils.extractor import db_to_json
 from scidb.utils.iteration import iter_data
 from scidb.core import Database, Data
-from typing import Tuple, List
+from typing import Tuple, List, Union
 from pathlib import Path
 from datetime import datetime
 import json
@@ -10,15 +10,15 @@ import shutil
 
 
 class LocalBackend(BackupBackend):
-    def __init__(self, db_name: str, db_path: [str, Path], backup_path: [str, Path]):
+    def __init__(self, db_name: str, db_path: Union[str, Path], backup_path: Union[str, Path]):
         self.__db_name__ = db_name
         self.__db_path__ = db_path if isinstance(db_path, Path) else Path(db_path)
         self.__backup_path__ = backup_path if isinstance(backup_path, Path) else Path(backup_path)
         self.__db__ = Database(db_name, str(db_path))
         super().__init__()
 
-    def ping(self) -> [bool, Tuple[bool, float]]:
-        return True, 0.0
+    def ping(self) -> Union[bool, Tuple[bool, float]]:
+        return True
 
     def connect(self):
         self.__is_connected__ = True
@@ -53,7 +53,7 @@ class LocalBackend(BackupBackend):
         backups = [child for child in self.__backup_path__.glob('*') if child.is_dir()]
         return [(backup.name, backup) for backup in backups]
 
-    def fetch_backup(self, time: str) -> Tuple[str, Path]:
-        backup_path = self.__backup_path__ / f"db_backup_{time}"
+    def fetch_backup(self, time: datetime) -> Tuple[str, Path]:
+        backup_path = self.__backup_path__ / f"db_backup_{time.strftime('%Y%m%d-%H%M%S')}"
         if backup_path.exists():
             return backup_path.name, backup_path

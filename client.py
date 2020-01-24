@@ -1,8 +1,4 @@
-from scidb.client.modules.database import handler as db_handler
-from scidb.client.modules.bucket import handler as bucket_handler
-from scidb.client.modules.data_set import handler as data_set_handler
-from scidb.client.modules.data import handler as data_handler
-from scidb.client.modules.metadata import handler as metadata_handler
+from scidb.client.modules import db_handler, bucket_handler, data_set_handler, data_handler, metadata_handler
 import shlex
 
 

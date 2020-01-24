@@ -10,7 +10,7 @@ bucket clean [-f] [<name> | <uuid> | all]
 """
 
 from scidb.core import Database, Bucket
-from typing import List, Set
+from typing import List, Set, Union
 import scidb.client.global_env as global_env
 
 
@@ -162,7 +162,7 @@ def print_buckets(buckets: Set[Bucket]):
     print('--------------------------------------------------------------')
 
 
-def list_bucket(bucket_filter: [None, str] = None):
+def list_bucket(bucket_filter: Union[None, str] = None):
     if bucket_filter is None:
         print_buckets(global_env.CONNECTED_DATABASE.buckets)
     elif bucket_filter == 'all':
@@ -179,7 +179,7 @@ def rm_bucket(name_or_uuid: str):
         bucket.delete()
 
 
-def restore_bucket(name_or_uuid: [str, None] = None):
+def restore_bucket(name_or_uuid: Union[str, None] = None):
     if name_or_uuid is None:
         for deleted in global_env.CONNECTED_DATABASE.trash:
             deleted.restore()
@@ -191,7 +191,7 @@ def restore_bucket(name_or_uuid: [str, None] = None):
             print('No such bucket.')
 
 
-def clean_bucket(name_or_uuid: [str, None], confirm: bool = True, feedback: bool = False):
+def clean_bucket(name_or_uuid: Union[str, None], confirm: bool = True, feedback: bool = False):
     if confirm and not feedback:
         print('User cancelled.')
         return

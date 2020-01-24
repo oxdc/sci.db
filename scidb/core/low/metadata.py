@@ -1,7 +1,7 @@
 import json
 import yaml
 import enum
-from typing import Callable, Any, List
+from typing import Callable, Any, List, Union
 
 
 class MetadataFileType(enum.Enum):
@@ -43,7 +43,7 @@ class NodeDict:
     def __init__(self,
                  node,
                  filename: str,
-                 data: [None, dict] = None,
+                 data: Union[None, dict] = None,
                  file_type: MetadataFileType = MetadataFileType.Json):
         self.__node__ = node
         self.__filename__ = filename
@@ -132,7 +132,7 @@ class NodeDict:
 class Metadata(NodeDict):
     def __init__(self,
                  node,
-                 data: [None, dict] = None,
+                 data: Union[None, dict] = None,
                  file_type: MetadataFileType = MetadataFileType.Json):
         if file_type == MetadataFileType.Yaml:
             filename = 'metadata.yml'
@@ -146,7 +146,7 @@ class Metadata(NodeDict):
 class Properties(NodeDict):
     def __init__(self,
                  node,
-                 data: [None, dict] = None,
+                 data: Union[None, dict] = None,
                  file_type: MetadataFileType = MetadataFileType.Json):
         if file_type == MetadataFileType.Yaml:
             filename = 'properties.yml'

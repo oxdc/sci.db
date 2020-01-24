@@ -34,14 +34,14 @@ class Data:
     @property
     def metadata(self):
         if self.__data_name__ in self.__parent__.metadata:
-            return self.__parent__.metadata[self.__data_name__]
+            return self.__parent__.metadata.data.to_dict()[self.__data_name__]
         else:
             return None
 
     @property
     def properties(self):
         if self.__data_name__ in self.__parent__.properties:
-            return self.__parent__.properties[self.__data_name__]
+            return self.__parent__.properties.data.to_dict()[self.__data_name__]
         else:
             return None
 

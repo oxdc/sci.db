@@ -12,7 +12,7 @@ dataset search [<name> | <uuid>]
 """
 
 from scidb.core import Bucket, DataSet
-from typing import List, Set
+from typing import List, Set, Union
 import scidb.client.global_env as global_env
 
 
@@ -179,7 +179,7 @@ def handler(args: List[str]):
         return
 
 
-def get_parent() -> [Bucket, DataSet]:
+def get_parent() -> Union[Bucket, DataSet]:
     return global_env.SELECTED_BUCKET if global_env.CURRENT_DATASET is None else global_env.CURRENT_DATASET
 
 
@@ -197,7 +197,7 @@ def print_data_sets(data_sets: Set[DataSet]):
     print('--------------------------------------------------------------')
 
 
-def list_data_set(data_set_filter: [None, str] = None):
+def list_data_set(data_set_filter: Union[None, str] = None):
     if data_set_filter is None:
         print_data_sets(get_parent().data_sets)
     elif data_set_filter == 'all':
@@ -232,7 +232,7 @@ def rm_data_set(name_or_uuid: str):
         data_set.delete()
 
 
-def restore_data_set(name_or_uuid: [str, None] = None):
+def restore_data_set(name_or_uuid: Union[str, None] = None):
     if name_or_uuid is None:
         for deleted in get_parent().trash:
             deleted.restore()
@@ -244,7 +244,7 @@ def restore_data_set(name_or_uuid: [str, None] = None):
             print('No such dataset.')
 
 
-def clean_data_set(name_or_uuid: [str, None], confirm: bool = True, feedback: bool = False):
+def clean_data_set(name_or_uuid: Union[str, None], confirm: bool = True, feedback: bool = False):
     if confirm and not feedback:
         print('User cancelled.')
         return
@@ -279,7 +279,7 @@ def print_tree_of_data_set(name_or_uuid: str):
         print_tree(data_set)
 
 
-def print_search_results(target: [None, DataSet], path: List):
+def print_search_results(target: Union[None, DataSet], path: List):
     if target is None:
         return
     print(f'@ Found result: {target.name} ({target.uuid})')
@@ -290,8 +290,8 @@ def print_search_results(target: [None, DataSet], path: List):
 
 
 def search_data_set(name_or_uuid: str,
-                    parent: [None, Bucket, DataSet] = None,
-                    path: [None, List] = None):
+                    parent: Union[None, Bucket, DataSet] = None,
+                    path: Union[None, List] = None):
     if path is None:
         path = []
     if parent is None:

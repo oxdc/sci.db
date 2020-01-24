@@ -1,11 +1,11 @@
 from scidb.core import Bucket, DataSet
-from typing import Callable
+from typing import Callable, Union
 
 
-def iter_data_set(bucket_or_data_set: [Bucket, DataSet],
+def iter_data_set(bucket_or_data_set: Union[Bucket, DataSet],
                   func: Callable,
                   include_deleted: bool = False,
-                  depth: [None, int] = None,
+                  depth: Union[None, int] = None,
                   **kwargs):
     if depth is not None and depth <= 0:
         return
@@ -15,10 +15,10 @@ def iter_data_set(bucket_or_data_set: [Bucket, DataSet],
         iter_data_set(child, func, include_deleted, depth=None if depth is None else depth - 1, **kwargs)
 
 
-def iter_data(bucket_or_data_set: [Bucket, DataSet],
+def iter_data(bucket_or_data_set: Union[Bucket, DataSet],
               func: Callable,
               include_deleted: bool = False,
-              depth: [None, int] = None,
+              depth: Union[None, int] = None,
               **kwargs):
     if depth is not None and depth <= 0:
         return

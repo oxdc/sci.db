@@ -2,17 +2,17 @@ from .low.node import Node
 from .data import Data
 from .low.metadata import Metadata, Properties
 from uuid import UUID
-from typing import Set, List
+from typing import Set, List, Union
 
 
 class DataSet(Node):
     def __init__(self,
                  data_set_name: str,
                  parent,
-                 uuid: [None, str, UUID] = None,
-                 deleted: [None, bool] = None,
-                 metadata: [None, Metadata] = None,
-                 properties: [None, Properties] = None):
+                 uuid: Union[None, str, UUID] = None,
+                 deleted: Union[None, bool] = None,
+                 metadata: Union[None, Metadata] = None,
+                 properties: Union[None, Properties] = None):
         self.__data_sets__ = set()
         self.__data__ = set()
         super().__init__(

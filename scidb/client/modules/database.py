@@ -8,7 +8,7 @@ db rm [-f] <name> <path>
 """
 
 from scidb.core import Database
-from typing import List
+from typing import List, Union
 from pathlib import Path
 import scidb.client.global_env as global_env
 import shutil
@@ -91,14 +91,14 @@ def handler(args: List[str]):
         return
 
 
-def create_db(name: str, path: [str, Path]):
+def create_db(name: str, path: Union[str, Path]):
     try:
         global_env.CONNECTED_DATABASE = Database(name, path)
     except FileExistsError:
         print('The directory is not empty. Please specify an empty one.')
 
 
-def connect_db(name: str, path: [str, Path]):
+def connect_db(name: str, path: Union[str, Path]):
     global_env.CONNECTED_DATABASE = Database(name, path)
 
 
@@ -106,7 +106,7 @@ def close_db():
     global_env.CONNECTED_DATABASE = None
 
 
-def rm_db(name: str, path: [str, Path], confirm: bool = True, feedback: bool = False):
+def rm_db(name: str, path: Union[str, Path], confirm: bool = True, feedback: bool = False):
     if confirm and not feedback:
         print('User cancelled.')
         return

@@ -9,7 +9,7 @@ data export <name> <dst_path>
 """
 
 from scidb.core import DataSet, Data
-from typing import List, Set
+from typing import List, Set, Union
 from pathlib import Path
 import scidb.client.global_env as global_env
 
@@ -150,7 +150,7 @@ def rm_data(name: str, confirm: bool = True, feedback: bool = False):
     global_env.CURRENT_DATASET.delete_data(name, confirm, feedback)
 
 
-def import_data(name: str, src_path: [str, Path], allow_overwrite: bool = False):
+def import_data(name: str, src_path: Union[str, Path], allow_overwrite: bool = False):
     if global_env.CURRENT_DATASET.get_data(name) is not None and not allow_overwrite:
         print('Overwrite is not permitted. Try with `-f`.')
         return
@@ -159,7 +159,7 @@ def import_data(name: str, src_path: [str, Path], allow_overwrite: bool = False)
     global_env.CURRENT_DATASET.get_data(name).import_file(src_path, allow_overwrite, confirm=True, feedback=True)
 
 
-def export_data(name: str, dst_path: [str, Path], allow_overwrite: bool = False):
+def export_data(name: str, dst_path: Union[str, Path], allow_overwrite: bool = False):
     if not isinstance(dst_path, Path):
         dst_path = Path(dst_path)
     if dst_path.exists() and not allow_overwrite:
