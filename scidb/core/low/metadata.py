@@ -1,7 +1,7 @@
 import json
 import yaml
 import enum
-from typing import Callable, Any
+from typing import Callable, Any, List
 
 
 class MetadataFileType(enum.Enum):
@@ -24,6 +24,10 @@ class ObservableDict(dict):
 
     def __getitem__(self, item: str) -> Any:
         return super().__getitem__(item)
+
+    def pop(self, key: str) -> Any:
+        super().pop(key, None)
+        self.__callback__()
 
     def set(self, item: str, value: Any):
         self.__setitem__(item, value)
@@ -65,7 +69,7 @@ class NodeDict:
                 else:
                     raise NotImplementedError('The type is not supported.')
 
-    def callback(self, item: str, value: Any):
+    def callback(self, item: str = None, value: Any = None):
         full_path = str(self.__node__.path / self.__filename__)
         with open(full_path, mode='w') as file:
             if self.__file_type__ == MetadataFileType.Yaml:
@@ -89,6 +93,36 @@ class NodeDict:
 
     def get(self, item: str) -> Any:
         return self.__getitem__(item)
+
+    def set_by_path(self, path: List[str], value: Any) -> Any:
+        data = self.__data__
+        length = len(path)
+        for i, key in enumerate(path):
+            if i < length - 1:
+                if key not in data:
+                    data[key] = dict()
+                data = data[key]
+            else:
+                data[key] = value
+
+    def get_by_path(self, path: List[str]) -> Any:
+        data = self.__data__
+        for key in path:
+            if key not in data:
+                return None
+            data = data[key]
+        return data
+
+    def delete_by_path(self, path: List[str]):
+        data = self.__data__
+        length = len(path)
+        for i, key in enumerate(path):
+            if i < length - 1:
+                if key not in data:
+                    return
+                data = data[key]
+            else:
+                data.pop(key)
 
     @property
     def data(self) -> ObservableDict:

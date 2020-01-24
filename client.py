@@ -2,6 +2,7 @@ from scidb.client.modules.database import handler as db_handler
 from scidb.client.modules.bucket import handler as bucket_handler
 from scidb.client.modules.data_set import handler as data_set_handler
 from scidb.client.modules.data import handler as data_handler
+from scidb.client.modules.metadata import handler as metadata_handler
 import shlex
 
 
@@ -32,6 +33,8 @@ if __name__ == "__main__":
             data_set_handler(args[1:])
         elif args[0] in ['d', 'data']:
             data_handler(args[1:])
+        elif args[0] in ['p', 'property', 'm', 'metadata']:
+            metadata_handler(args)
         elif args[0] == 'exit':
             break
         else:

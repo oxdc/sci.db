@@ -9,9 +9,10 @@ metadata delete [<name> | <uuid>] <key_path>
 metadata show [<name> | <uuid>]
 """
 
-from scidb.core import Database, Bucket, DataSet
-from typing import List, Any
+from scidb.core import Database, Bucket, DataSet, Data
+from typing import List, Any, Union
 import scidb.client.global_env as global_env
+from pprint import pprint
 
 
 usage = """\
@@ -101,7 +102,7 @@ def handler(args: List[str]):
         print('Internal error.')
         exit(-1)
         return
-    if args[0] not in ['property', 'metadata']:
+    if args[0] not in ['p', 'property', 'm', 'metadata']:
         print(usage)
         return
     if args[1] == 'edit':
@@ -124,26 +125,83 @@ def handler(args: List[str]):
         return
 
 
-def get_item(node_type: str, name_or_uuid: str) -> [Bucket, DataSet]:
-    if node_type == 'bucket' and isinstance(global_env.CONNECTED_DATABASE, Database):
+def get_item(node_type: str, name_or_uuid: str) -> Union[Bucket, DataSet, Data, None]:
+    if node_type in ['bk', 'bucket'] and isinstance(global_env.CONNECTED_DATABASE, Database):
         return global_env.CONNECTED_DATABASE.get_bucket(name_or_uuid, include_deleted=True)
-    elif node_type == 'dataset':
+    elif node_type in ['ds', 'dataset'] and (
+            isinstance(global_env.SELECTED_BUCKET, Bucket) or
+            isinstance(global_env.CURRENT_DATASET, DataSet)):
         parent = global_env.SELECTED_BUCKET if global_env.CURRENT_DATASET is None else global_env.CURRENT_DATASET
-        if parent is not None:
-            return parent.get_data_set(name_or_uuid, include_deleted=True)
-        else:
-            return None
-    elif node_type == 'data':
-        pass
+        return parent.get_data_set(name_or_uuid, include_deleted=True)
+    elif node_type in ['d', 'data'] and isinstance(global_env.CURRENT_DATASET, DataSet):
+        return global_env.CURRENT_DATASET.get_data(name_or_uuid)
+    else:
+        return None
 
 
 def edit_entry(entry_type: str, node_type: str, name_or_uuid: str, key_path: str, value: Any):
-    pass
+    target = get_item(node_type, name_or_uuid)
+    if target is None:
+        print('No such item')
+        return
+    if entry_type in ['m', 'metadata']:
+        if isinstance(target, Data):
+            path = key_path.split('.')
+            path.insert(0, target.name)
+            target.parent.metadata.set_by_path(path, value)
+        else:
+            target.metadata.set_by_path(key_path.split('.'), value)
+    elif entry_type in ['p', 'property']:
+        if isinstance(target, Data):
+            path = key_path.split('.')
+            path.insert(0, target.name)
+            target.parent.properties.set_by_path(path, value)
+        else:
+            target.properties.set_by_path(key_path.split('.'), value)
+    else:
+        print('No such entry.')
+        return
 
 
 def delete_entry(entry_type: str, node_type: str, name_or_uuid: str, key_path: str):
-    pass
+    target = get_item(node_type, name_or_uuid)
+    if target is None:
+        print('No such item')
+        return
+    if entry_type in ['m', 'metadata']:
+        if isinstance(target, Data):
+            path = key_path.split('.')
+            path.insert(0, target.name)
+            target.parent.metadata.delete_by_path(path)
+        else:
+            target.metadata.delete_by_path(key_path.split('.'))
+    elif entry_type in ['p', 'property']:
+        if isinstance(target, Data):
+            path = key_path.split('.')
+            path.insert(0, target.name)
+            target.parent.properties.delete_by_path(path)
+        else:
+            target.properties.delete_by_path(key_path.split('.'))
+    else:
+        print('No such entry.')
+        return
 
 
 def show_entry(entry_type: str, node_type: str, name_or_uuid: str):
-    pass
+    target = get_item(node_type, name_or_uuid)
+    if target is None:
+        print('No such item')
+        return
+    if entry_type in ['m', 'metadata']:
+        if isinstance(target, Data):
+            pprint(target.metadata)
+        else:
+            pprint(target.metadata.data.to_dict())
+    elif entry_type in ['p', 'property']:
+        if isinstance(target, Data):
+            pprint(target.properties)
+        else:
+            pprint(target.properties.data.to_dict())
+    else:
+        print('No such entry.')
+        return

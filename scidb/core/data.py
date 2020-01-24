@@ -9,9 +9,19 @@ class Data:
         self.__data_name__ = data_name
         self.__parent__ = parent
         self.init_metadata()
+        self.init_properties()
 
     def init_metadata(self):
-        self.__parent__.metadata[self.__data_name__] = dict()
+        if self.__data_name__ not in self.__parent__.metadata:
+            self.__parent__.metadata[self.__data_name__] = dict()
+
+    def init_properties(self):
+        if self.__data_name__ not in self.__parent__.properties:
+            self.__parent__.properties[self.__data_name__] = dict()
+
+    @property
+    def parent(self):
+        return self.__parent__
 
     @property
     def path(self) -> Path:
@@ -25,6 +35,13 @@ class Data:
     def metadata(self):
         if self.__data_name__ in self.__parent__.metadata:
             return self.__parent__.metadata[self.__data_name__]
+        else:
+            return None
+
+    @property
+    def properties(self):
+        if self.__data_name__ in self.__parent__.properties:
+            return self.__parent__.properties[self.__data_name__]
         else:
             return None
 
