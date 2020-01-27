@@ -1,8 +1,8 @@
-from scidb.plugins.backup.base.backend import BackupBackend
+from ..base.backend import BackupBackend
+from ..base.backup_profile import BackupProfile
+from scidb.core import Database, Data
 from scidb.utils.extractor import db_to_json, recover_db
 from scidb.utils.iteration import iter_data
-from scidb.core import Database, Data
-from ..base.backup_profile import BackupProfile
 from typing import Tuple, List, Union
 from pathlib import Path
 from datetime import datetime
@@ -52,7 +52,7 @@ class LocalBackend(BackupBackend):
     def connect(self):
         self.__is_connected__ = True
 
-    def create_backup(self, verbose: bool = True):
+    def create_backup(self, verbose: bool = True) -> LocalBackupProfile:
         profile = LocalBackupProfile(time=datetime.now(), path=self.__backup_path__)
         profile.obj_path.mkdir(parents=True, exist_ok=True)
         with open(str(profile.db_json), 'w') as fp:
@@ -74,6 +74,8 @@ class LocalBackend(BackupBackend):
 
         for bucket in self.__db__.all_buckets:
             iter_data(bucket, copy_data_objs, include_deleted=True)
+
+        return profile
 
     def sync_backup(self):
         pass

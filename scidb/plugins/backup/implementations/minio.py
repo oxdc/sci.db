@@ -1,7 +1,8 @@
-from scidb.plugins.backup.base.backend import BackupBackend
-from scidb.utils.extractor import db_to_json
-from scidb.utils.iteration import iter_data
+from ..base.backend import BackupBackend
+from ..base.backup_profile import BackupProfile
 from scidb.core import Database, Data
+from scidb.utils.extractor import db_to_json, recover_db
+from scidb.utils.iteration import iter_data
 from typing import Tuple, List, Union
 from pathlib import Path
 from datetime import datetime
@@ -13,6 +14,31 @@ import json
 import shutil
 
 
+class MinioBackupProfile(BackupProfile):
+    def __init__(self,
+                 profile_name: Union[None, str] = None,
+                 time: Union[None, datetime] = None,
+                 obj_bucket_name: str = 'scidb-objects',
+                 backup_bucket_name: str = 'scidb-backups'):
+        self.obj_bucket_name = obj_bucket_name
+        self.backup_bucket_name = backup_bucket_name
+        self.__temp_dir__ = TemporaryDirectory()
+        self.__temp_path__ = Path(self.__temp_dir__.name)
+        self.obj_list = dict()
+        super().__init__(profile_name, time)
+
+    @property
+    def temp_path(self) -> Path:
+        return self.__temp_path__
+
+    @property
+    def db_json(self) -> Path:
+        return self.__temp_path__ / self.name
+
+    def remove_temp(self):
+        self.__temp_dir__.cleanup()
+
+
 class MinioBackend(BackupBackend):
     def __init__(self,
                  db_name: str,
@@ -22,7 +48,9 @@ class MinioBackend(BackupBackend):
                  secret_key: str,
                  secure: bool = True,
                  region: Union[str, None] = None,
-                 http_client: Union[PoolManager, None] = None):
+                 http_client: Union[PoolManager, None] = None,
+                 obj_bucket_name: str = 'scidb-objects',
+                 backup_bucket_name: str = 'scidb-backups'):
         self.__db_name__ = db_name
         self.__db_path__ = db_path if isinstance(db_path, Path) else Path(db_path)
         self.__endpoint__ = endpoint
@@ -31,6 +59,8 @@ class MinioBackend(BackupBackend):
         self.__secure__ = secure
         self.__region__ = region
         self.__http_client__ = http_client
+        self.obj_bucket_name = obj_bucket_name
+        self.backup_bucket_name = backup_bucket_name
         self.__server__ = Minio(
             endpoint,
             access_key,
@@ -40,10 +70,7 @@ class MinioBackend(BackupBackend):
             http_client=http_client
         )
         self.__db__ = Database(db_name, str(db_path))
-        self.__temp_dir__ = TemporaryDirectory()
-        self.__temp_path__ = Path(self.__temp_dir__.name)
-        self.__obj_list__ = dict()
-        self.__backup_name__ = ''
+        self.__current_profile__: MinioBackupProfile = None
         super().__init__()
 
     @property
@@ -51,22 +78,19 @@ class MinioBackend(BackupBackend):
         return self.__server__
 
     def init_remote_storage(self) -> bool:
-        if not self.__server__.bucket_exists('scidb-objects'):
-            self.__server__.make_bucket('scidb-objects')
-        if not self.__server__.bucket_exists('scidb-backups'):
-            self.__server__.make_bucket('scidb-backups')
-        return self.__server__.bucket_exists('scidb-objects') and self.__server__.bucket_exists('scidb-backups')
+        assert self.__current_profile__ is not None
+        if not self.__server__.bucket_exists(self.__current_profile__.obj_bucket_name):
+            self.__server__.make_bucket(self.__current_profile__.obj_bucket_name)
+        if not self.__server__.bucket_exists(self.__current_profile__.backup_bucket_name):
+            self.__server__.make_bucket(self.__current_profile__.backup_bucket_name)
+        return self.__server__.bucket_exists(self.__current_profile__.obj_bucket_name) \
+            and self.__server__.bucket_exists(self.__current_profile__.backup_bucket_name)
 
     def ping(self) -> Union[bool, Tuple[bool, float]]:
         return True
 
     def connect(self):
         self.__is_connected__ = True
-
-    def __init_local_temp__(self):
-        if self.__temp_path__.exists():
-            shutil.rmtree(str(self.__temp_path__), ignore_errors=True)
-        self.__temp_path__.mkdir(parents=True)
 
     def exists_object(self, bucket_name: str, object_name: str) -> bool:
         try:
@@ -79,45 +103,95 @@ class MinioBackend(BackupBackend):
         except NoSuchBucket:
             return False
 
-    def create_backup(self):
-        self.__backup_name__ = f"db_backup_{datetime.now().strftime('%Y%m%d-%H%M%S')}.json"
-        db_json = self.__temp_path__ / self.__backup_name__
-        with open(str(db_json), 'w') as fp:
+    def create_backup(self, verbose: bool = True) -> MinioBackupProfile:
+        profile = MinioBackupProfile(time=datetime.now())
+        with open(str(profile.db_json), 'w') as fp:
             json.dump(
                 obj=db_to_json(self.__db_name__, self.__db_path__),
                 fp=fp,
                 indent=2
             )
 
-        def list_data_objs(data: Data, results: dict):
+        def list_data_objs(data: Data):
+            if verbose:
+                print('Added:', data.name, data.path)
             h = data.sha1()
-            if h not in results and not self.exists_object('scidb-objects', h):
-                results[h] = {
+            if h not in profile.obj_list and not self.exists_object(profile.obj_bucket_name, h):
+                profile.obj_list[h] = {
                     'path': data.path,
                     'metadata': data.metadata
                 }
-            print('Added:', data.name, data.path)
 
-        self.__obj_list__ = dict()
         for bucket in self.__db__.all_buckets:
-            iter_data(bucket, list_data_objs, include_deleted=True, results=self.__obj_list__)
+            iter_data(bucket, list_data_objs, include_deleted=True, )
+
+        self.__current_profile__ = profile
+        return profile
 
     def sync_backup(self):
+        if self.__current_profile__ is None:
+            raise AssertionError('Backup has not been created.')
         self.init_remote_storage()
-        self.__server__.fput_object('scidb-backups', self.__backup_name__, self.__temp_path__ / self.__backup_name__)
-        for name, info in self.__obj_list__.items():
+        self.__server__.fput_object(
+            self.__current_profile__.backup_bucket_name,
+            self.__current_profile__.name,
+            str(self.__current_profile__.db_json)
+        )
+        for name, info in self.__current_profile__.obj_list.items():
             print('Sync:', name)
-            self.__server__.fput_object('scidb-objects', name, info['path'], metadata=info['metadata'])
-        self.__backup_name__ = ''
+            self.__server__.fput_object(
+                self.__current_profile__.obj_bucket_name,
+                name,
+                info['path'],
+                metadata=info['metadata']
+            )
 
-    def list_backups(self) -> List[str]:
-        if not self.__server__.bucket_exists('scidb-backups'):
+    def list_backups(self) -> List[MinioBackupProfile]:
+        if not self.__server__.bucket_exists(self.backup_bucket_name):
             return []
-        return [str(backup.object_name) for backup in self.__server__.list_objects('scidb-backups')]
+        else:
+            return [
+                MinioBackupProfile(
+                    profile_name=backup.object_name,
+                    obj_bucket_name=self.obj_bucket_name,
+                    backup_bucket_name=self.backup_bucket_name
+                )
+                for backup in self.__server__.list_objects(self.backup_bucket_name)
+            ]
 
-    def fetch_backup(self, time: datetime) -> Union[str, None]:
-        backup_name = f"db_backup_{time.strftime('%Y%m%d-%H%M%S')}.json"
-        if self.exists_object('scidb-backups', backup_name):
-            return backup_name
+    def fetch_backup(self, time: datetime) -> Union[None, MinioBackupProfile]:
+        profile = MinioBackupProfile(
+            time=time,
+            obj_bucket_name=self.obj_bucket_name,
+            backup_bucket_name=self.backup_bucket_name
+        )
+        if self.exists_object(self.backup_bucket_name, profile.name):
+            return profile
         else:
             return None
+
+    def recover_from_backup(self, profile: MinioBackupProfile, new_path: Union[str, Path]):
+        if isinstance(new_path, str):
+            new_path = Path(new_path)
+        if new_path.exists():
+            raise FileExistsError
+        self.__server__.fget_object(
+            profile.backup_bucket_name,
+            profile.name,
+            str(profile.db_json)
+        )
+
+        def get_file(sha1: str) -> str:
+            file_path = str(profile.temp_path / sha1)
+            self.__server__.fget_object(
+                profile.obj_bucket_name,
+                sha1,
+                file_path
+            )
+            return file_path
+
+        with open(str(profile.db_json)) as fp:
+            db_json = json.load(fp)
+            recover_db(db_json, new_path, get_file=get_file)
+
+        profile.remove_temp()
