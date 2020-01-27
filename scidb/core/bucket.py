@@ -31,11 +31,19 @@ class Bucket(Node):
             self.__data_sets__.add(DataSet(data_set.name, self))
 
     def add_data_set(self, name: str) -> DataSet:
-        if self.get_data_set(name) is not None:
+        if self.get_data_set(name, include_deleted=True) is not None:
             raise FileExistsError
         new_data_set = DataSet(data_set_name=name, parent=self)
         self.__data_sets__.add(new_data_set)
         return new_data_set
+
+    def insert_data_set(self, data_set: DataSet) -> DataSet:
+        if data_set in self.__data_sets__ \
+                or self.get_data_set(data_set.name, include_deleted=True) is not None \
+                or self.get_data_set(data_set.uuid, include_deleted=True) is not None:
+            raise FileExistsError
+        self.__data_sets__.add(data_set)
+        return data_set
 
     def get_data_set(self, name_or_uuid: str, include_deleted: bool = False) -> DataSet:
         target = None

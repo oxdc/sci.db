@@ -41,11 +41,19 @@ class Database(Root):
         return self.__buckets__
 
     def add_bucket(self, name: str) -> Bucket:
-        if self.get_bucket(name) is not None:
+        if self.get_bucket(name, include_deleted=True) is not None:
             raise FileExistsError
         new_bucket = Bucket(bucket_name=name, parent=self)
         self.__buckets__.add(new_bucket)
         return new_bucket
+
+    def insert_bucket(self, bucket: Bucket) -> Bucket:
+        if bucket in self.__buckets__ \
+                or self.get_bucket(bucket.name, include_deleted=True) is not None \
+                or self.get_bucket(bucket.uuid, include_deleted=True):
+            raise FileExistsError
+        self.__buckets__.add(bucket)
+        return bucket
 
     def get_bucket(self, name_or_uuid: str, include_deleted: bool = False) -> Bucket:
         target = None
