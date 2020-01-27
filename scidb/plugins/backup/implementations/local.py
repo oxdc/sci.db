@@ -1,5 +1,5 @@
 from scidb.plugins.backup.base.backend import BackupBackend
-from scidb.utils.extractor import db_to_json
+from scidb.utils.extractor import db_to_json, recover_db
 from scidb.utils.iteration import iter_data
 from scidb.core import Database, Data
 from ..base.backup_profile import BackupProfile
@@ -15,27 +15,27 @@ class LocalBackupProfile(BackupProfile):
                  profile_name: Union[None, str] = None,
                  time: Union[None, datetime] = None,
                  path: Union[None, str, Path] = None):
-        self.__path__ = None
+        self.__root_path__ = None
         self.set_path(path)
         super().__init__(profile_name, time)
 
     @property
-    def path(self):
-        return self.__path__
+    def path(self) -> Path:
+        return self.__root_path__
 
     @property
-    def db_json(self):
-        return self.__path__ / self.name
+    def db_json(self) -> Path:
+        return self.__root_path__ / self.name
 
     @property
-    def obj_path(self):
-        return self.__path__ / 'objects'
+    def obj_path(self) -> Path:
+        return self.__root_path__ / 'objects'
 
     def set_path(self, path: Union[None, str, Path]):
         if path is None or isinstance(path, Path):
-            self.__path__ = path
+            self.__root_path__ = path
         else:
-            self.__path__ = Path(path)
+            self.__root_path__ = Path(path)
 
 
 class LocalBackend(BackupBackend):
@@ -64,7 +64,7 @@ class LocalBackend(BackupBackend):
 
         def copy_data_objs(data: Data):
             if verbose:
-                print(data.name, data.path)
+                print('Added:', data.name, data.path)
             dst_path = profile.obj_path / data.sha1()
             if not dst_path.exists():
                 shutil.copyfile(
@@ -82,7 +82,22 @@ class LocalBackend(BackupBackend):
         backups = [child for child in self.__backup_path__.glob('db_backup_*.json') if child.is_file()]
         return [LocalBackupProfile(profile_name=backup.name, path=self.__backup_path__) for backup in backups]
 
-    def fetch_backup(self, time: datetime) -> Tuple[str, Path]:
-        backup_path = self.__backup_path__ / f"db_backup_{time.strftime('%Y%m%d-%H%M%S')}"
-        if backup_path.exists():
-            return backup_path.name, backup_path
+    def fetch_backup(self, time: datetime) -> Union[None, LocalBackupProfile]:
+        profile = LocalBackupProfile(time=time, path=self.__backup_path__)
+        if profile.db_json.exists():
+            return profile
+        else:
+            return None
+
+    def recover_from_backup(self, profile: LocalBackupProfile, new_path: Union[str, Path]):
+        if isinstance(new_path, str):
+            new_path = Path(new_path)
+        if new_path.exists():
+            raise FileExistsError
+
+        def get_file(sha1: str) -> str:
+            return str(profile.obj_path / sha1)
+
+        with open(str(profile.db_json)) as fp:
+            db_json = json.load(fp)
+            recover_db(db_json, new_path, get_file=get_file)

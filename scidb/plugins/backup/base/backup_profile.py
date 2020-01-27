@@ -20,3 +20,7 @@ class BackupProfile:
     @property
     def name(self) -> str:
         return f"db_backup_{self.__time__.strftime('%Y%m%d-%H%M%S-%f')}.json"
+
+    @property
+    def time(self) -> datetime:
+        return self.__time__

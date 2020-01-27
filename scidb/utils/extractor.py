@@ -9,7 +9,7 @@ def db_to_json(db_name: str, db_path: str):
     results = dict()
     results['properties'] = dict()
     results['properties']['name'] = db.name
-    results['properties']['path'] = db.path
+    results['properties']['path'] = str(db.path)
     results['properties']['version'] = db.version
     results['buckets'] = dict()
     for bucket in db.all_buckets:
@@ -42,23 +42,25 @@ def data_to_json(data: Data, results: dict):
     results[data.name] = data.sha1()
 
 
-def recover_db(json: Union[dict, str], new_path: Union[str, Path]):
-    if isinstance(json, str):
-        json = loads(json)
+def recover_db(db_json: Union[dict, str], new_path: Union[str, Path], get_file: Union[None, Callable] = None):
+    if isinstance(db_json, str):
+        db_json = loads(db_json)
     if isinstance(new_path, str):
         new_path = Path(new_path)
     if new_path.exists():
         raise FileExistsError
-    assert 'name' in json and 'buckets' in json
-    name = json['name']
-    version = json.get('version', 'alpha1')
-    buckets = json['buckets']
+    assert 'properties' in db_json
+    properties = db_json['properties']
+    assert 'name' in properties and 'buckets' in db_json
+    name = properties['name']
+    version = properties.get('version', 'alpha1')
+    buckets = db_json['buckets']
     assert isinstance(buckets, dict)
     db = Database(name, path=str(new_path), version=version)
-    recover_buckets(db, buckets)
+    recover_buckets(db, buckets, get_file=get_file)
 
 
-def recover_buckets(db: Database, buckets: dict):
+def recover_buckets(db: Database, buckets: dict, get_file: Union[None, Callable] = None):
     for bucket_name, bucket_info in buckets.items():
         properties = bucket_info['properties']
         metadata = bucket_info['metadata']
@@ -71,10 +73,10 @@ def recover_buckets(db: Database, buckets: dict):
             properties=properties
         )
         new_bucket = db.insert_bucket(new_bucket)
-        recover_data_sets(new_bucket, children)
+        recover_data_sets(new_bucket, children, get_file=get_file)
 
 
-def recover_data_sets(parent: Union[Bucket, DataSet], data_sets: dict):
+def recover_data_sets(parent: Union[Bucket, DataSet], data_sets: dict, get_file: Union[None, Callable] = None):
     for data_set_name, data_set_info in data_sets.items():
         properties = data_set_info['properties']
         metadata = data_set_info['metadata']
@@ -87,8 +89,8 @@ def recover_data_sets(parent: Union[Bucket, DataSet], data_sets: dict):
             properties=properties
         )
         parent.insert_data_set(new_data_set)
-        recover_data_sets(new_data_set, children)
-        recover_data(new_data_set, data)
+        recover_data_sets(new_data_set, children, get_file=get_file)
+        recover_data(new_data_set, data, get_file=get_file)
 
 
 def recover_data(

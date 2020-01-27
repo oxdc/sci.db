@@ -26,3 +26,6 @@ class BackupBackend:
 
     def fetch_backup(self, **kwargs):
         raise NotImplementedError
+
+    def recover_from_backup(self, **kwargs):
+        raise NotImplementedError

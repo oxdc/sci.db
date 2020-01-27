@@ -12,15 +12,25 @@ class Node:
                  parent=None,
                  uuid: Union[None, UUID] = None,
                  deleted: Union[None, bool] = None,
-                 metadata: Union[None, Metadata] = None,
-                 properties: Union[None, Properties] = None):
+                 metadata: Union[None, dict, Metadata] = None,
+                 properties: Union[None, dict, Properties] = None):
         self.__node_name__ = node_name
         self.__node_type__ = node_type
         self.__parent__ = parent
         self.__uuid__ = str(uuid) if uuid else str(uuid4())
         self.init_storage()
-        self.metadata = metadata if metadata and isinstance(metadata, Metadata) else Metadata(self)
-        self.properties = properties if properties and isinstance(properties, Properties) else Properties(self)
+        if isinstance(metadata, Metadata):
+            self.metadata = metadata
+        elif isinstance(metadata, dict):
+            self.metadata = Metadata(self, metadata)
+        else:
+            self.metadata = Metadata(self)
+        if isinstance(properties, Properties):
+            self.properties = properties
+        elif isinstance(properties, dict):
+            self.properties = Properties(self, properties)
+        else:
+            self.properties = Properties(self)
         self.properties['node_name'] = node_name
         self.properties['node_type'] = node_type
         if 'uuid' in self.properties:
