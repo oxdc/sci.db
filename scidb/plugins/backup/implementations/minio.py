@@ -16,6 +16,7 @@ import shutil
 
 class MinioBackupProfile(BackupProfile):
     def __init__(self,
+                 db_name: str,
                  profile_name: Union[None, str] = None,
                  time: Union[None, datetime] = None,
                  obj_bucket_name: str = 'scidb-objects',
@@ -25,7 +26,7 @@ class MinioBackupProfile(BackupProfile):
         self.__temp_dir__ = TemporaryDirectory()
         self.__temp_path__ = Path(self.__temp_dir__.name)
         self.obj_list = dict()
-        super().__init__(profile_name, time)
+        super().__init__(db_name, profile_name, time)
 
     @property
     def temp_path(self) -> Path:
@@ -37,6 +38,20 @@ class MinioBackupProfile(BackupProfile):
 
     def remove_temp(self):
         self.__temp_dir__.cleanup()
+
+    def __str__(self) -> str:
+        return f"MinioBackupProfile(" \
+               f"db='{self.__db_name__}', " \
+               f"time='{self.time}', " \
+               f"obj_bucket='{self.obj_bucket_name}', " \
+               f"backup_bucket='{self.backup_bucket_name}')"
+
+    def __repr__(self) -> str:
+        return f"MinioBackupProfile(" \
+               f"db='{self.__db_name__}', " \
+               f"time='{self.time}', " \
+               f"obj_bucket='{self.obj_bucket_name}', " \
+               f"backup_bucket='{self.backup_bucket_name}')"
 
 
 class MinioBackend(BackupBackend):
@@ -70,7 +85,7 @@ class MinioBackend(BackupBackend):
             http_client=http_client
         )
         self.__db__ = Database(db_name, str(db_path))
-        self.__current_profile__: MinioBackupProfile = None
+        self.__current_profile__: Union[None, MinioBackupProfile] = None
         super().__init__()
 
     @property
@@ -104,7 +119,7 @@ class MinioBackend(BackupBackend):
             return False
 
     def create_backup(self, verbose: bool = True) -> MinioBackupProfile:
-        profile = MinioBackupProfile(time=datetime.now())
+        profile = MinioBackupProfile(db_name=self.__db_name__, time=datetime.now())
         with open(str(profile.db_json), 'w') as fp:
             json.dump(
                 obj=db_to_json(self.__db_name__, self.__db_path__),
@@ -128,7 +143,7 @@ class MinioBackend(BackupBackend):
         self.__current_profile__ = profile
         return profile
 
-    def sync_backup(self):
+    def sync_backup(self, verbose: bool = True):
         if self.__current_profile__ is None:
             raise AssertionError('Backup has not been created.')
         self.init_remote_storage()
@@ -138,7 +153,8 @@ class MinioBackend(BackupBackend):
             str(self.__current_profile__.db_json)
         )
         for name, info in self.__current_profile__.obj_list.items():
-            print('Sync:', name)
+            if verbose:
+                print('Sync:', name)
             self.__server__.fput_object(
                 self.__current_profile__.obj_bucket_name,
                 name,
@@ -146,12 +162,15 @@ class MinioBackend(BackupBackend):
                 metadata=info['metadata']
             )
 
-    def list_backups(self) -> List[MinioBackupProfile]:
+    def list_backups(self, db_name: Union[None, str] = None) -> List[MinioBackupProfile]:
+        if db_name is None:
+            db_name = self.__db_name__
         if not self.__server__.bucket_exists(self.backup_bucket_name):
             return []
         else:
             return [
                 MinioBackupProfile(
+                    db_name=db_name,
                     profile_name=backup.object_name,
                     obj_bucket_name=self.obj_bucket_name,
                     backup_bucket_name=self.backup_bucket_name
@@ -159,8 +178,11 @@ class MinioBackend(BackupBackend):
                 for backup in self.__server__.list_objects(self.backup_bucket_name)
             ]
 
-    def fetch_backup(self, time: datetime) -> Union[None, MinioBackupProfile]:
+    def fetch_backup(self, time: datetime, db_name: Union[None, str] = None) -> Union[None, MinioBackupProfile]:
+        if db_name is None:
+            db_name = self.__db_name__
         profile = MinioBackupProfile(
+            db_name=db_name,
             time=time,
             obj_bucket_name=self.obj_bucket_name,
             backup_bucket_name=self.backup_bucket_name

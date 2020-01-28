@@ -12,12 +12,13 @@ import shutil
 
 class LocalBackupProfile(BackupProfile):
     def __init__(self,
+                 db_name: str,
                  profile_name: Union[None, str] = None,
                  time: Union[None, datetime] = None,
                  path: Union[None, str, Path] = None):
         self.__root_path__ = None
         self.set_path(path)
-        super().__init__(profile_name, time)
+        super().__init__(db_name, profile_name, time)
 
     @property
     def path(self) -> Path:
@@ -37,6 +38,12 @@ class LocalBackupProfile(BackupProfile):
         else:
             self.__root_path__ = Path(path)
 
+    def __str__(self) -> str:
+        return f"LocalBackupProfile(db='{self.__db_name__}', time='{self.time}', path='{self.__root_path__}')"
+
+    def __repr__(self) -> str:
+        return f"LocalBackupProfile(db='{self.__db_name__}', time='{self.time}', path='{self.__root_path__}')"
+
 
 class LocalBackend(BackupBackend):
     def __init__(self, db_name: str, db_path: Union[str, Path], backup_path: Union[str, Path]):
@@ -53,7 +60,7 @@ class LocalBackend(BackupBackend):
         self.__is_connected__ = True
 
     def create_backup(self, verbose: bool = True) -> LocalBackupProfile:
-        profile = LocalBackupProfile(time=datetime.now(), path=self.__backup_path__)
+        profile = LocalBackupProfile(db_name=self.__db_name__, time=datetime.now(), path=self.__backup_path__)
         profile.obj_path.mkdir(parents=True, exist_ok=True)
         with open(str(profile.db_json), 'w') as fp:
             json.dump(
@@ -80,12 +87,24 @@ class LocalBackend(BackupBackend):
     def sync_backup(self):
         pass
 
-    def list_backups(self) -> List[LocalBackupProfile]:
-        backups = [child for child in self.__backup_path__.glob('db_backup_*.json') if child.is_file()]
-        return [LocalBackupProfile(profile_name=backup.name, path=self.__backup_path__) for backup in backups]
+    def list_backups(self, db_name: Union[None, str] = None) -> List[LocalBackupProfile]:
+        if db_name is None:
+            db_name = self.__db_name__
+        backups = [
+            child
+            for child in
+            self.__backup_path__.glob(f'db_backup_{db_name}_*.json')
+            if child.is_file()
+        ]
+        return [
+            LocalBackupProfile(db_name=db_name, profile_name=backup.name, path=self.__backup_path__)
+            for backup in backups
+        ]
 
-    def fetch_backup(self, time: datetime) -> Union[None, LocalBackupProfile]:
-        profile = LocalBackupProfile(time=time, path=self.__backup_path__)
+    def fetch_backup(self, time: datetime, db_name: Union[None, str] = None) -> Union[None, LocalBackupProfile]:
+        if db_name is None:
+            db_name = self.__db_name__
+        profile = LocalBackupProfile(db_name=db_name, time=time, path=self.__backup_path__)
         if profile.db_json.exists():
             return profile
         else:
