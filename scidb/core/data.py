@@ -1,7 +1,7 @@
 import shutil
 import hashlib
 from pathlib import Path
-from typing import TextIO, BinaryIO, IO
+from typing import TextIO, BinaryIO, IO, Union
 
 
 class Data:
@@ -18,6 +18,20 @@ class Data:
     def init_properties(self):
         if self.__data_name__ not in self.__parent__.properties:
             self.__parent__.properties[self.__data_name__] = dict()
+
+    def set_metadata(self, metadata: Union[None, dict], merge: bool = True):
+        if metadata is None:
+            return
+        if merge:
+            metadata = {**metadata, **self.metadata}
+        self.__parent__.metadata[self.__data_name__] = metadata
+
+    def set_properties(self, properties: Union[None, dict], merge: bool = True):
+        if properties is None:
+            return
+        if merge:
+            properties = {**properties, **self.properties}
+        self.__parent__.properties[self.__data_name__] = properties
 
     @property
     def parent(self):
