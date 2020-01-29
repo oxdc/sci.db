@@ -42,6 +42,8 @@ class Bucket(Node):
                 or self.get_data_set(data_set.name, include_deleted=True) is not None \
                 or self.get_data_set(data_set.uuid, include_deleted=True) is not None:
             raise FileExistsError
+        if data_set.parent is not self:
+            raise AssertionError
         self.__data_sets__.add(data_set)
         return data_set
 

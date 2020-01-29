@@ -52,6 +52,8 @@ class Database(Root):
                 or self.get_bucket(bucket.name, include_deleted=True) is not None \
                 or self.get_bucket(bucket.uuid, include_deleted=True):
             raise FileExistsError
+        if bucket.parent is not self:
+            raise AssertionError
         self.__buckets__.add(bucket)
         return bucket
 

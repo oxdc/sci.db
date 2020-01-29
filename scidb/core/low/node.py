@@ -66,9 +66,19 @@ class Node:
     def parent(self):
         return self.__parent__
 
-    def change_parent(self, new_parent):
-        self.move_storage(new_parent.path / self.name)
-        self.__parent__ = new_parent
+    def move_to(self, new_parent):
+        if new_parent.path != self.__parent__.path:
+            self.move_storage(new_parent.path / self.name)
+            self.__parent__ = new_parent
+        else:
+            raise FileExistsError
+
+    def copy_to(self, new_parent):
+        if new_parent.path != self.__parent__.path:
+            self.copy_storage(new_parent.path / self.name)
+            self.__parent__ = new_parent
+        else:
+            raise FileExistsError
 
     @property
     def path(self) -> Path:
@@ -93,6 +103,9 @@ class Node:
 
     def move_storage(self, new_path: Union[str, Path]):
         shutil.move(str(self.path), str(new_path))
+
+    def copy_storage(self, new_path: Union[str, Path]):
+        shutil.copytree(str(self.path), str(new_path), dirs_exist_ok=True)
 
     def purge_storage(self, confirm: bool = True, feedback: bool = False):
         if confirm and not feedback:
