@@ -62,7 +62,8 @@ def migrate_db(source: Database,
         return
     for src_bucket in source.all_buckets:
         if not allow_overwrite and (
-                destination.get_bucket(src_bucket.name) or destination.get_bucket(src_bucket.uuid)
+            destination.get_bucket(src_bucket.name, include_deleted=True)
+            or destination.get_bucket(src_bucket.uuid, include_deleted=True)
         ):
             return
         if delete_source:
@@ -79,7 +80,29 @@ def migrate_bucket(source: Bucket,
                    feedback: bool = False):
     if confirm and not feedback:
         return
-    raise NotImplementedError
+    if isinstance(destination, Database):
+        if not allow_overwrite and (
+            destination.get_bucket(source.name, include_deleted=True)
+            or destination.get_bucket(source.uuid, include_deleted=True)
+        ):
+            return
+        if delete_source:
+            source.move_to(destination)
+        else:
+            source.copy_to(destination)
+    elif isinstance(destination, Bucket) or isinstance(destination, DataSet):
+        for src_bucket in source.all_data_sets:
+            if not allow_overwrite and (
+                destination.get_data_set(src_bucket.name, include_deleted=True)
+                or destination.get_data_set(src_bucket.uuid, include_deleted=True)
+            ):
+                return
+            if delete_source:
+                src_bucket.move_to(destination)
+            else:
+                src_bucket.copy_to(destination)
+    else:
+        raise TypeError
 
 
 def migrate_data_set(source: DataSet,
@@ -90,7 +113,15 @@ def migrate_data_set(source: DataSet,
                      feedback: bool = False):
     if confirm and not feedback:
         return
-    raise NotImplementedError
+    if not allow_overwrite and (
+        destination.get_data_set(source.name, include_deleted=True)
+        or destination.get_data_set(source.uuid, include_deleted=True)
+    ):
+        return
+    if delete_source:
+        source.move_to(destination)
+    else:
+        source.copy_to(destination)
 
 
 def migrate_data(source: Data,
@@ -101,4 +132,20 @@ def migrate_data(source: Data,
                  feedback: bool = False):
     if confirm and not feedback:
         return
-    raise NotImplementedError
+    if isinstance(destination, DataSet):
+        if not allow_overwrite and destination.get_data(source.name):
+            return
+        data = destination.add_data(source.name)
+        data.import_file(source.path, confirm, feedback)
+        data.parent.properties[source.name] = source.properties
+        data.parent.metadata[source.name] = source.metadata
+        if delete_source:
+            source.parent.delete_data(source.name, confirm, feedback)
+    elif isinstance(destination, Data):
+        if not allow_overwrite:
+            return
+        destination.import_file(source.path)
+        if delete_source:
+            source.parent.delete_data(source.name, confirm, feedback)
+    else:
+        raise TypeError
