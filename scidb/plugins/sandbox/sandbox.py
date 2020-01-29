@@ -1,4 +1,5 @@
 from scidb.core import Database, Bucket, DataSet
+from scidb.utils.migrator import migrate
 from typing import Set, Union
 
 
@@ -66,23 +67,20 @@ class SandboxManager:
 
     def migrate_sandbox(self,
                         name: str,
-                        target: Union[Bucket, DataSet],
+                        destination: Union[Database, Bucket, DataSet],
+                        delete_source: bool = False,
                         allow_overwrite: bool = False,
                         conform: bool = True,
                         feedback: bool = False):
         if conform and not feedback:
             return
         sandbox = self.get_sandbox(name)
+        old_name = sandbox.name
+        new_name = self.__convert_name__(sandbox_name=old_name)
+        sandbox.rename(new_name)
         if sandbox is None:
             raise FileNotFoundError
-        raise NotImplementedError
-
-    def migrate_dataset(self,
-                        dataset: DataSet,
-                        target: Union[Bucket, DataSet],
-                        allow_overwrite: bool = False,
-                        conform: bool = True,
-                        feedback: bool = False):
-        if conform and not feedback:
-            return
-        raise NotImplementedError
+        migrate(sandbox, destination, delete_source, allow_overwrite, conform, feedback)
+        sandbox = self.get_sandbox(new_name)
+        if sandbox is not None:
+            sandbox.rename(old_name)
