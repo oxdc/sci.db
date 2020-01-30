@@ -157,7 +157,7 @@ def migrate_data(source: Data,
         if verbose:
             print('Migrating:', 'Data', source.name)
         data = destination.add_data(source.name)
-        data.import_file(source.path, confirm, feedback)
+        data.import_file(source.path, allow_overwrite, confirm, feedback)
         data.set_properties(source.properties)
         data.set_metadata(source.metadata)
         if delete_source:
@@ -167,7 +167,7 @@ def migrate_data(source: Data,
             return
         if verbose:
             print('Migrating:', 'Data', source.name)
-        destination.import_file(source.path)
+        destination.import_file(source.path, allow_overwrite, confirm, feedback)
         destination.set_properties(source.properties)
         destination.set_metadata(source.metadata)
         if delete_source:
