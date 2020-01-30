@@ -145,19 +145,9 @@ def edit_entry(entry_type: str, node_type: str, name_or_uuid: str, key_path: str
         print('No such item')
         return
     if entry_type in ['m', 'metadata']:
-        if isinstance(target, Data):
-            path = key_path.split('.')
-            path.insert(0, target.name)
-            target.parent.metadata.set_by_path(path, value)
-        else:
-            target.metadata.set_by_path(key_path.split('.'), value)
+        target.metadata.set_by_path(key_path.split('.'), value)
     elif entry_type in ['p', 'property']:
-        if isinstance(target, Data):
-            path = key_path.split('.')
-            path.insert(0, target.name)
-            target.parent.properties.set_by_path(path, value)
-        else:
-            target.properties.set_by_path(key_path.split('.'), value)
+        target.properties.set_by_path(key_path.split('.'), value)
     else:
         print('No such entry.')
         return
@@ -169,19 +159,9 @@ def delete_entry(entry_type: str, node_type: str, name_or_uuid: str, key_path: s
         print('No such item')
         return
     if entry_type in ['m', 'metadata']:
-        if isinstance(target, Data):
-            path = key_path.split('.')
-            path.insert(0, target.name)
-            target.parent.metadata.delete_by_path(path)
-        else:
-            target.metadata.delete_by_path(key_path.split('.'))
+        target.metadata.delete_by_path(key_path.split('.'))
     elif entry_type in ['p', 'property']:
-        if isinstance(target, Data):
-            path = key_path.split('.')
-            path.insert(0, target.name)
-            target.parent.properties.delete_by_path(path)
-        else:
-            target.properties.delete_by_path(key_path.split('.'))
+        target.properties.delete_by_path(key_path.split('.'))
     else:
         print('No such entry.')
         return
@@ -193,15 +173,9 @@ def show_entry(entry_type: str, node_type: str, name_or_uuid: str):
         print('No such item')
         return
     if entry_type in ['m', 'metadata']:
-        if isinstance(target, Data):
-            pprint(target.metadata)
-        else:
-            pprint(target.metadata.data.to_dict())
+        pprint(target.metadata)
     elif entry_type in ['p', 'property']:
-        if isinstance(target, Data):
-            pprint(target.properties)
-        else:
-            pprint(target.properties.data.to_dict())
+        pprint(target.properties)
     else:
         print('No such entry.')
         return

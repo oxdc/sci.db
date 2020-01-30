@@ -137,8 +137,8 @@ def migrate_data(source: Data,
             return
         data = destination.add_data(source.name)
         data.import_file(source.path, confirm, feedback)
-        data.parent.properties[source.name] = source.properties
-        data.parent.metadata[source.name] = source.metadata
+        data.set_properties(source.properties)
+        data.set_metadata(source.metadata)
         if delete_source:
             source.parent.delete_data(source.name, confirm, feedback)
     elif isinstance(destination, Data):

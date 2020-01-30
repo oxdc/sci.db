@@ -2,6 +2,7 @@ import shutil
 import hashlib
 from pathlib import Path
 from typing import TextIO, BinaryIO, IO, Union
+from .low import ObservableDict
 
 
 class Data:
@@ -23,14 +24,14 @@ class Data:
         if metadata is None:
             return
         if merge:
-            metadata = {**metadata, **self.metadata}
+            metadata = {**self.metadata, **metadata}
         self.__parent__.metadata[self.__data_name__] = metadata
 
     def set_properties(self, properties: Union[None, dict], merge: bool = True):
         if properties is None:
             return
         if merge:
-            properties = {**properties, **self.properties}
+            properties = {**self.properties, **properties}
         self.__parent__.properties[self.__data_name__] = properties
 
     @property
@@ -46,18 +47,12 @@ class Data:
         return self.__data_name__
 
     @property
-    def metadata(self):
-        if self.__data_name__ in self.__parent__.metadata:
-            return self.__parent__.metadata.data.to_dict()[self.__data_name__]
-        else:
-            return None
+    def metadata(self) -> ObservableDict:
+        return self.__parent__.metadata[self.__data_name__]
 
     @property
-    def properties(self):
-        if self.__data_name__ in self.__parent__.properties:
-            return self.__parent__.properties.data.to_dict()[self.__data_name__]
-        else:
-            return None
+    def properties(self) -> ObservableDict:
+        return self.__parent__.properties[self.__data_name__]
 
     def rename(self, new_name: str):
         shutil.move(str(self.path), str(self.__parent__.path / new_name))

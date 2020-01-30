@@ -46,14 +46,14 @@ class Node:
         if metadata is None:
             return
         if merge:
-            metadata = {**metadata, **self.metadata.data.to_dict()}
+            metadata = {**self.metadata, **metadata}
         self.metadata = Metadata(self, metadata)
 
     def set_properties(self, properties: Union[None, dict], merge: bool = True):
         if properties is None:
             return
         if merge:
-            properties = {**properties, **self.properties.data.to_dict()}
+            properties = {**self.properties, **properties}
         self.properties = Properties(self, properties)
 
     @property

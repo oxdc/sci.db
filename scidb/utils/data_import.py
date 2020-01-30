@@ -19,7 +19,7 @@ def import_file(file: Union[str, Path],
                 path: List[str],
                 metadata: Union[None, dict] = None,
                 properties: Union[None, dict] = None,
-                allow_overwrite: bool = True,
+                allow_overwrite: bool = False,
                 confirm: bool = True,
                 feedback: bool = False) -> Union[None, Data]:
     if confirm and not feedback:
@@ -49,7 +49,7 @@ def import_dir(directory: Union[str, Path],
                skip_dir: bool = False,
                metadata: Union[None, dict] = None,
                properties: Union[None, dict] = None,
-               allow_overwrite: bool = True,
+               allow_overwrite: bool = False,
                confirm: bool = True,
                feedback: bool = False) -> Union[None, DataSet]:
     if confirm and not feedback:
@@ -93,7 +93,7 @@ def import_tree(root: Union[str, Path],
                 db: Database,
                 metadata: Union[None, dict] = None,
                 properties: Union[None, dict] = None,
-                allow_overwrite: bool = True,
+                allow_overwrite: bool = False,
                 confirm: bool = True,
                 feedback: bool = False) -> Union[None, Bucket]:
     if confirm and not feedback:
@@ -107,7 +107,7 @@ def import_tree(root: Union[str, Path],
     if not db.get_bucket(bucket_name, include_deleted=True):
         db.add_bucket(bucket_name)
     bucket = db.get_bucket(bucket_name, include_deleted=True)
-    inner_path = ['']
+    inner_path = []
     for child in root.glob('*'):
         if child.is_file():
             print(f'WARING: File {child.name} cannot be imported into bucket {bucket_name}.')

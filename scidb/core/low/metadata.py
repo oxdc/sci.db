@@ -2,6 +2,7 @@ import json
 import yaml
 import enum
 from typing import Callable, Any, List, Union
+from collections.abc import Mapping
 
 
 class MetadataFileType(enum.Enum):
@@ -35,11 +36,41 @@ class ObservableDict(dict):
     def get(self, item: str) -> Any:
         return self.__getitem__(item)
 
+    def set_by_path(self, path: List[str], value: Any):
+        data = self
+        length = len(path)
+        for i, key in enumerate(path):
+            if i < length - 1:
+                if key not in data:
+                    data[key] = dict()
+                data = data[key]
+            else:
+                data[key] = value
+
+    def get_by_path(self, path: List[str]) -> Any:
+        data = self
+        for key in path:
+            if key not in data:
+                return None
+            data = data[key]
+        return data
+
+    def delete_by_path(self, path: List[str]):
+        data = self
+        length = len(path)
+        for i, key in enumerate(path):
+            if i < length - 1:
+                if key not in data:
+                    return
+                data = data[key]
+            else:
+                data.pop(key)
+
     def to_dict(self) -> dict:
         return {key: dict(value) if isinstance(value, ObservableDict) else value for key, value in self.items()}
 
 
-class NodeDict:
+class NodeDict(Mapping):
     def __init__(self,
                  node,
                  filename: str,
@@ -94,39 +125,30 @@ class NodeDict:
     def get(self, item: str) -> Any:
         return self.__getitem__(item)
 
-    def set_by_path(self, path: List[str], value: Any) -> Any:
-        data = self.__data__
-        length = len(path)
-        for i, key in enumerate(path):
-            if i < length - 1:
-                if key not in data:
-                    data[key] = dict()
-                data = data[key]
-            else:
-                data[key] = value
+    def set_by_path(self, path: List[str], value: Any):
+        self.__data__.set_by_path(path, value)
 
     def get_by_path(self, path: List[str]) -> Any:
-        data = self.__data__
-        for key in path:
-            if key not in data:
-                return None
-            data = data[key]
-        return data
+        return self.__data__.get_by_path(path)
 
     def delete_by_path(self, path: List[str]):
-        data = self.__data__
-        length = len(path)
-        for i, key in enumerate(path):
-            if i < length - 1:
-                if key not in data:
-                    return
-                data = data[key]
-            else:
-                data.pop(key)
+        self.__data__.delete_by_path(path)
 
     @property
     def data(self) -> ObservableDict:
         return self.__data__
+
+    def __str__(self) -> str:
+        return str(self.__data__.to_dict())
+
+    def __repr__(self) -> str:
+        return str(self.__data__.to_dict())
+
+    def __iter__(self):
+        return iter(self.__data__)
+
+    def __len__(self):
+        return len(self.__data__)
 
 
 class Metadata(NodeDict):
