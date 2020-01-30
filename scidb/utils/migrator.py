@@ -113,6 +113,9 @@ def migrate_bucket(source: Bucket,
                 src_bucket.move_to(destination)
             else:
                 src_bucket.copy_to(destination)
+        if delete_source:
+            source.delete()
+            source.parent.clear_trash(confirm, feedback)
     else:
         raise TypeError
 

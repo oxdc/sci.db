@@ -82,8 +82,10 @@ class Node:
 
     def move_to(self, new_parent):
         if new_parent.path != self.__parent__.path:
-            self.move_storage(new_parent.path / self.name)
+            old_path = self.path
+            self.copy_storage(new_parent.path / self.name)
             self.__parent__ = new_parent
+            shutil.rmtree(old_path)
         else:
             raise FileExistsError
 
