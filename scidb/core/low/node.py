@@ -42,6 +42,20 @@ class Node:
         elif 'deleted' not in self.properties:
             self.properties['deleted'] = False
 
+    def set_metadata(self, metadata: Union[None, dict], merge: bool = True):
+        if metadata is None:
+            return
+        if merge:
+            metadata = {**metadata, **self.metadata.data.to_dict()}
+        self.metadata = Metadata(self, metadata)
+
+    def set_properties(self, properties: Union[None, dict], merge: bool = True):
+        if properties is None:
+            return
+        if merge:
+            properties = {**properties, **self.properties.data.to_dict()}
+        self.properties = Properties(self, properties)
+
     @property
     def uuid(self) -> str:
         return self.__uuid__
