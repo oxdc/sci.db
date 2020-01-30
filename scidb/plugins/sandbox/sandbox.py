@@ -30,14 +30,14 @@ class SandboxManager:
         sandbox_name = self.__convert_name__(pure_name=name)
         return self.__db__.add_bucket(sandbox_name)
 
-    def get_sandbox(self, name: str) -> Union[Bucket, None]:
+    def get_sandbox(self, name: str, include_deleted: bool = False) -> Union[Bucket, None]:
         sandbox_name = self.__convert_name__(pure_name=name)
-        sandbox = self.__db__.get_bucket(sandbox_name)
+        sandbox = self.__db__.get_bucket(sandbox_name, include_deleted)
         return sandbox
 
     @property
     def sandboxes(self) -> Set[Bucket]:
-        return set(filter(lambda bucket: self.is_sandbox(bucket), self.__db__.buckets))
+        return set(filter(lambda bucket: self.is_sandbox(bucket), self.__db__.all_buckets))
 
     def list_sandbox(self) -> Set[Bucket]:
         return self.sandboxes
@@ -51,12 +51,12 @@ class SandboxManager:
     def delete_sandbox(self, name: str, conform: bool = True, feedback: bool = False):
         if conform and not feedback:
             return
-        sandbox = self.get_sandbox(name)
+        sandbox = self.get_sandbox(name, include_deleted=True)
         if sandbox is None:
             raise FileNotFoundError
         else:
             sandbox.delete()
-            sandbox.clear_trash(conform, feedback)
+            self.__db__.clear_trash(conform, feedback)
 
     def delete_all_sandboxes(self, conform: bool = True, feedback: bool = False):
         if conform and not feedback:
@@ -67,20 +67,16 @@ class SandboxManager:
 
     def migrate_sandbox(self,
                         name: str,
-                        destination: Union[Database, Bucket, DataSet],
-                        delete_source: bool = False,
+                        destination: Union[Bucket, DataSet],
+                        delete_source: bool = True,
                         allow_overwrite: bool = False,
                         conform: bool = True,
-                        feedback: bool = False):
+                        feedback: bool = False,
+                        verbose: bool = True):
         if conform and not feedback:
             return
-        sandbox = self.get_sandbox(name)
-        old_name = sandbox.name
-        new_name = self.__convert_name__(sandbox_name=old_name)
-        sandbox.rename(new_name)
+        sandbox = self.get_sandbox(name, include_deleted=True)
         if sandbox is None:
             raise FileNotFoundError
-        migrate(sandbox, destination, delete_source, allow_overwrite, conform, feedback)
-        sandbox = self.get_sandbox(new_name)
-        if sandbox is not None:
-            sandbox.rename(old_name)
+        for data_set in sandbox.all_data_sets:
+            migrate(data_set, destination, delete_source, allow_overwrite, conform, feedback, verbose)
