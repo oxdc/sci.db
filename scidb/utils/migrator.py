@@ -29,17 +29,18 @@ def migrate(source: Union[Database, Bucket, DataSet, Data],
             delete_source: bool = False,
             allow_overwrite: bool = False,
             confirm: bool = True,
-            feedback: bool = False):
+            feedback: bool = False,
+            verbose: bool = True):
     if not is_allowed(source, destination):
         raise AssertionError(f'Migration from {type(source)} to {type(destination)} is not allowed.')
     if confirm and not feedback:
         return
     if isinstance(source, Database):
-        migrate_db(source, destination, delete_source, allow_overwrite, confirm, feedback)
+        migrate_db(source, destination, delete_source, allow_overwrite, confirm, feedback, verbose)
     elif isinstance(source, Bucket):
-        migrate_bucket(source, destination, delete_source, allow_overwrite, confirm, feedback)
+        migrate_bucket(source, destination, delete_source, allow_overwrite, confirm, feedback, verbose)
     elif isinstance(source, DataSet):
-        migrate_data_set(source, destination, delete_source, allow_overwrite, confirm, feedback)
+        migrate_data_set(source, destination, delete_source, allow_overwrite, confirm, feedback, verbose)
     elif isinstance(source, Data):
         migrate_data(source, destination, delete_source, allow_overwrite, confirm, feedback)
     else:
@@ -57,7 +58,8 @@ def migrate_db(source: Database,
                delete_source: bool = False,
                allow_overwrite: bool = False,
                confirm: bool = True,
-               feedback: bool = False):
+               feedback: bool = False,
+               verbose: bool = True):
     if confirm and not feedback:
         return
     for src_bucket in source.all_buckets:
@@ -65,7 +67,9 @@ def migrate_db(source: Database,
             destination.get_bucket(src_bucket.name, include_deleted=True)
             or destination.get_bucket(src_bucket.uuid, include_deleted=True)
         ):
-            return
+            continue
+        if verbose:
+            print('Migrating:', src_bucket.node_type, src_bucket.name)
         if delete_source:
             src_bucket.move_to(destination)
         else:
@@ -77,7 +81,8 @@ def migrate_bucket(source: Bucket,
                    delete_source: bool = False,
                    allow_overwrite: bool = False,
                    confirm: bool = True,
-                   feedback: bool = False):
+                   feedback: bool = False,
+                   verbose: bool = True):
     if confirm and not feedback:
         return
     if isinstance(destination, Database):
@@ -86,17 +91,24 @@ def migrate_bucket(source: Bucket,
             or destination.get_bucket(source.uuid, include_deleted=True)
         ):
             return
+        if verbose:
+            print('Migrating:', source.node_type, source.name)
         if delete_source:
             source.move_to(destination)
         else:
             source.copy_to(destination)
     elif isinstance(destination, Bucket) or isinstance(destination, DataSet):
+        if allow_overwrite:
+            destination.set_metadata(source.metadata)
+            destination.set_properties(source.properties)
         for src_bucket in source.all_data_sets:
             if not allow_overwrite and (
                 destination.get_data_set(src_bucket.name, include_deleted=True)
                 or destination.get_data_set(src_bucket.uuid, include_deleted=True)
             ):
-                return
+                continue
+            if verbose:
+                print('Migrating:', src_bucket.node_type, src_bucket.name)
             if delete_source:
                 src_bucket.move_to(destination)
             else:
@@ -110,7 +122,8 @@ def migrate_data_set(source: DataSet,
                      delete_source: bool = False,
                      allow_overwrite: bool = False,
                      confirm: bool = True,
-                     feedback: bool = False):
+                     feedback: bool = False,
+                     verbose: bool = True):
     if confirm and not feedback:
         return
     if not allow_overwrite and (
@@ -118,6 +131,8 @@ def migrate_data_set(source: DataSet,
         or destination.get_data_set(source.uuid, include_deleted=True)
     ):
         return
+    if verbose:
+        print('Migrating:', source.node_type, source.name)
     if delete_source:
         source.move_to(destination)
     else:
@@ -129,12 +144,15 @@ def migrate_data(source: Data,
                  delete_source: bool = False,
                  allow_overwrite: bool = False,
                  confirm: bool = True,
-                 feedback: bool = False):
+                 feedback: bool = False,
+                 verbose: bool = True):
     if confirm and not feedback:
         return
     if isinstance(destination, DataSet):
         if not allow_overwrite and destination.get_data(source.name):
             return
+        if verbose:
+            print('Migrating:', 'Data', source.name)
         data = destination.add_data(source.name)
         data.import_file(source.path, confirm, feedback)
         data.set_properties(source.properties)
@@ -144,7 +162,11 @@ def migrate_data(source: Data,
     elif isinstance(destination, Data):
         if not allow_overwrite:
             return
+        if verbose:
+            print('Migrating:', 'Data', source.name)
         destination.import_file(source.path)
+        destination.set_properties(source.properties)
+        destination.set_metadata(source.metadata)
         if delete_source:
             source.parent.delete_data(source.name, confirm, feedback)
     else:

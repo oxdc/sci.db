@@ -71,7 +71,7 @@ def import_dir(directory: Union[str, Path],
     for child in directory.glob('*'):
         if child.is_file():
             if not allow_overwrite and data_set.get_data(child.name):
-                return
+                continue
             data_set.add_data(child.name).import_file(child, allow_overwrite, confirm, feedback)
         elif child.is_dir() and not skip_dir:
             import_dir(
