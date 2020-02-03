@@ -76,6 +76,12 @@ class DataSet(Node):
                 target = data
         return target
 
+    def touch_data(self, name: str) -> Data:
+        target = self.get_data(name)
+        if target is None:
+            target = self.add_data(name)
+        return target
+
     def delete_data(self, name: str, confirm: bool = True, feedback: bool = False):
         if confirm and not feedback:
             return
