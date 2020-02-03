@@ -62,6 +62,14 @@ class DataSet(Node):
                 target = data_set
         return target
 
+    def touch_data_set(self, name: str) -> 'DataSet':
+        target = self.get_data_set(name, include_deleted=True)
+        if target is None:
+            target = self.add_data_set(name)
+        if target.deleted:
+            raise AssertionError
+        return target
+
     def add_data(self, name: str) -> Data:
         if self.get_data(name) is not None:
             raise FileExistsError

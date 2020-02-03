@@ -55,6 +55,14 @@ class Bucket(Node):
                 target = data_set
         return target
 
+    def touch_data_set(self, name: str) -> DataSet:
+        target = self.get_data_set(name, include_deleted=True)
+        if target is None:
+            target = self.add_data_set(name)
+        if target.deleted:
+            raise AssertionError
+        return target
+
     @property
     def data_sets(self) -> Set[DataSet]:
         return set(filter(lambda data_set: not data_set.deleted, self.__data_sets__))

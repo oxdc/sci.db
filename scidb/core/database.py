@@ -65,6 +65,14 @@ class Database(Root):
                 target = bucket
         return target
 
+    def touch_bucket(self, name: str) -> Bucket:
+        target = self.get_bucket(name, include_deleted=True)
+        if target is None:
+            target = self.add_bucket(name)
+        if target.deleted:
+            raise AssertionError
+        return target
+
     def clear_trash(self, conform: bool = True, feedback: bool = False):
         if conform and not feedback:
             return
