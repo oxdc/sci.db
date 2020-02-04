@@ -1,6 +1,14 @@
 from scidb.core import Database, Bucket, DataSet, Data
-from typing import Union, Tuple
+from typing import Union, Tuple, List
 from pathlib import Path
+
+
+NODE_TYPE = {
+    'database': Database,
+    'bucket': Bucket,
+    'dataset': DataSet,
+    'data': Data
+}
 
 
 class NodeWrapper:
@@ -11,7 +19,7 @@ class NodeWrapper:
     def node(self):
         return self.__node__
 
-    def __rshift__(self, child: Union[str, Tuple[Union[Bucket, DataSet, Data], str]]) -> 'NodeWrapper':
+    def __rshift__(self, child: Union[str, Tuple[type, str]]) -> 'NodeWrapper':
         node_identifier = ''
         node_type = None
         if isinstance(child, str):
@@ -47,7 +55,7 @@ class NodeWrapper:
         else:
             raise TypeError
 
-    def __lshift__(self, child: Union[str, Tuple[Union[Bucket, DataSet, Data], str]]) -> 'NodeWrapper':
+    def __lshift__(self, child: Union[str, Tuple[type, str]]) -> 'NodeWrapper':
         node_identifier = ''
         node_type = None
         if isinstance(child, str):
@@ -112,3 +120,43 @@ class NodeWrapper:
 
 def walk(node: Union[Database, Bucket, DataSet, Data]):
     return NodeWrapper(node)
+
+
+def __convert_to_type__(type_or_name: Union[str, type]) -> type:
+    if isinstance(type_or_name, type):
+        return type
+    elif isinstance(type_or_name, str):
+        type_or_name = type_or_name.lower()
+        if type_or_name in NODE_TYPE:
+            return NODE_TYPE[type_or_name]
+        else:
+            raise KeyError
+    else:
+        raise TypeError
+
+
+def walk_path(node: Union[Database, Bucket, DataSet, Data],
+              path: List[Union[str, Tuple[Union[str, type], str], Tuple[Union[str, type], str, bool]]]) \
+        -> Union[Bucket, DataSet, Data]:
+    wrapper = walk(node)
+    if len(path) == 0:
+        return wrapper.node
+    item = path[0]
+    if isinstance(item, str):
+        wrapper = wrapper << item
+    elif isinstance(item, tuple):
+        if len(item) == 2:
+            node_type, node_name = item
+            required = False
+        elif len(item) == 3:
+            node_type, node_name, required = item
+        else:
+            raise AssertionError
+        node_type = __convert_to_type__(node_type)
+        if required:
+            wrapper = wrapper >> (node_type, node_name)
+        else:
+            wrapper = wrapper << (node_type, node_name)
+    else:
+        raise TypeError
+    return walk_path(wrapper.node, path[1:])
