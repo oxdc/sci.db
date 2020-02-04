@@ -137,10 +137,10 @@ def __convert_to_type__(type_or_name: Union[str, type]) -> type:
 
 def walk_path(node: Union[Database, Bucket, DataSet, Data],
               path: List[Union[str, Tuple[Union[str, type], str], Tuple[Union[str, type], str, bool]]]) \
-        -> Union[Bucket, DataSet, Data]:
+        -> NodeWrapper:
     wrapper = walk(node)
     if len(path) == 0:
-        return wrapper.node
+        return wrapper
     item = path[0]
     if isinstance(item, str):
         wrapper = wrapper << item

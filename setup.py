@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
    name='oxdc-scidb',
-   version='0.1b5',
+   version='0.1b6',
    description='A simple scientific database.',
    author='oxdc',
    author_email='projaias@outlook.com',
