@@ -118,7 +118,7 @@ class MinioBackend(BackupBackend):
         except NoSuchBucket:
             return False
 
-    def create_backup(self, verbose: bool = True) -> MinioBackupProfile:
+    def create_backup(self, verbose: bool = True, require_hash_update: bool = False) -> MinioBackupProfile:
         profile = MinioBackupProfile(db_name=self.__db_name__, time=datetime.now())
         with open(str(profile.db_json), 'w') as fp:
             json.dump(
@@ -130,7 +130,7 @@ class MinioBackend(BackupBackend):
         def list_data_objs(data: Data):
             if verbose:
                 print('Added:', data.name, data.path)
-            h = data.sha1()
+            h = data.sha1(require_update=require_hash_update)
             if h not in profile.obj_list and not self.exists_object(profile.obj_bucket_name, h):
                 profile.obj_list[h] = {
                     'path': data.path,

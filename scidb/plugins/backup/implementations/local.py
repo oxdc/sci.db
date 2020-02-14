@@ -59,7 +59,7 @@ class LocalBackend(BackupBackend):
     def connect(self):
         self.__is_connected__ = True
 
-    def create_backup(self, verbose: bool = True) -> LocalBackupProfile:
+    def create_backup(self, verbose: bool = True, require_hash_update: bool = False) -> LocalBackupProfile:
         profile = LocalBackupProfile(db_name=self.__db_name__, time=datetime.now(), path=self.__backup_path__)
         profile.obj_path.mkdir(parents=True, exist_ok=True)
         with open(str(profile.db_json), 'w') as fp:
@@ -72,7 +72,7 @@ class LocalBackend(BackupBackend):
         def copy_data_objs(data: Data):
             if verbose:
                 print('Added:', data.name, data.path)
-            dst_path = profile.obj_path / data.sha1()
+            dst_path = profile.obj_path / data.sha1(require_update=require_hash_update)
             if not dst_path.exists():
                 shutil.copyfile(
                     src=str(data.path),

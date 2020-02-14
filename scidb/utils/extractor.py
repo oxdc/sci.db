@@ -4,8 +4,10 @@ from json import loads
 from pathlib import Path
 
 
-def db_to_json(db_name: str, db_path: str):
+def db_to_json(db_name: str, db_path: str, verbose: bool = True):
     db = Database(db_name, db_path)
+    if verbose:
+        print('Extract Database:', db_name, '@', db_path)
     results = dict()
     results['properties'] = dict()
     results['properties']['name'] = db.name
@@ -17,32 +19,44 @@ def db_to_json(db_name: str, db_path: str):
         results['buckets'][bucket.name]['properties'] = bucket.properties.data.to_dict()
         results['buckets'][bucket.name]['metadata'] = bucket.metadata.data.to_dict()
         results['buckets'][bucket.name]['children'] = dict()
-        bucket_to_json(bucket, results=results['buckets'][bucket.name]['children'])
+        bucket_to_json(bucket, results=results['buckets'][bucket.name]['children'], verbose=verbose)
     return results
 
 
-def bucket_to_json(bucket: Bucket, results: dict):
+def bucket_to_json(bucket: Bucket, results: dict, verbose: bool = True):
+    if verbose:
+        print('Extract Bucket:', bucket.name)
     for data_set in bucket.all_data_sets:
-        data_set_to_json(data_set, results)
+        data_set_to_json(data_set, results, verbose=verbose)
 
 
-def data_set_to_json(data_set: DataSet, results: dict):
+def data_set_to_json(data_set: DataSet, results: dict, verbose: bool = True):
+    if verbose:
+        print('Extract DataSet:', data_set.name)
     results[data_set.name] = dict()
     results[data_set.name]['properties'] = data_set.properties.data.to_dict()
     results[data_set.name]['metadata'] = data_set.metadata.data.to_dict()
     results[data_set.name]['children'] = dict()
     results[data_set.name]['data'] = dict()
     for child in data_set.all_data_sets:
-        data_set_to_json(child, results[data_set.name]['children'])
+        data_set_to_json(child, results[data_set.name]['children'], verbose=verbose)
     for data in data_set.data:
-        data_to_json(data, results[data_set.name]['data'])
+        data_to_json(data, results[data_set.name]['data'], verbose=verbose)
 
 
-def data_to_json(data: Data, results: dict):
+def data_to_json(data: Data, results: dict, verbose: bool = True):
+    if verbose:
+        print('Extract Data:', data.name)
     results[data.name] = data.sha1()
 
 
-def recover_db(db_json: Union[dict, str], new_path: Union[str, Path], get_file: Union[None, Callable] = None):
+def recover_db(
+        db_json: Union[dict, str],
+        new_path: Union[str, Path],
+        get_file: Union[None, Callable] = None,
+        verbose: bool = True):
+    if verbose:
+        print('Recover Database to', new_path)
     if isinstance(db_json, str):
         db_json = loads(db_json)
     if isinstance(new_path, str):
@@ -57,11 +71,17 @@ def recover_db(db_json: Union[dict, str], new_path: Union[str, Path], get_file: 
     buckets = db_json['buckets']
     assert isinstance(buckets, dict)
     db = Database(name, path=str(new_path), version=version)
-    recover_buckets(db, buckets, get_file=get_file)
+    recover_buckets(db, buckets, get_file=get_file, verbose=verbose)
 
 
-def recover_buckets(db: Database, buckets: dict, get_file: Union[None, Callable] = None):
+def recover_buckets(
+        db: Database,
+        buckets: dict,
+        get_file: Union[None, Callable] = None,
+        verbose: bool = True):
     for bucket_name, bucket_info in buckets.items():
+        if verbose:
+            print('Recover Bucket', bucket_name)
         properties = bucket_info['properties']
         metadata = bucket_info['metadata']
         children = bucket_info['children']
@@ -73,11 +93,17 @@ def recover_buckets(db: Database, buckets: dict, get_file: Union[None, Callable]
             properties=properties
         )
         new_bucket = db.insert_bucket(new_bucket)
-        recover_data_sets(new_bucket, children, get_file=get_file)
+        recover_data_sets(new_bucket, children, get_file=get_file, verbose=verbose)
 
 
-def recover_data_sets(parent: Union[Bucket, DataSet], data_sets: dict, get_file: Union[None, Callable] = None):
+def recover_data_sets(
+        parent: Union[Bucket, DataSet],
+        data_sets: dict,
+        get_file: Union[None, Callable] = None,
+        verbose: bool = True):
     for data_set_name, data_set_info in data_sets.items():
+        if verbose:
+            print('Recover DataSet', data_set_name)
         properties = data_set_info['properties']
         metadata = data_set_info['metadata']
         children = data_set_info['children']
@@ -89,16 +115,19 @@ def recover_data_sets(parent: Union[Bucket, DataSet], data_sets: dict, get_file:
             properties=properties
         )
         parent.insert_data_set(new_data_set)
-        recover_data_sets(new_data_set, children, get_file=get_file)
-        recover_data(new_data_set, data, get_file=get_file)
+        recover_data_sets(new_data_set, children, get_file=get_file, verbose=verbose)
+        recover_data(new_data_set, data, get_file=get_file, verbose=verbose)
 
 
 def recover_data(
         data_set: DataSet,
         data: dict,
         file: Union[None, str, Path] = None,
-        get_file: Union[None, Callable] = None):
+        get_file: Union[None, Callable] = None,
+        verbose: bool = True):
     for data_name, data_sha1 in data.items():
+        if verbose:
+            print('Recover DataSet', data_name)
         new_data = data_set.add_data(data_name)
         if file:
             new_data.import_file(file, confirm=False)

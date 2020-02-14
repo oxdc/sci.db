@@ -115,11 +115,26 @@ class Data:
                 h.update(data)
         return h.hexdigest()
 
-    def md5(self, buffer_size: int = 131072) -> [str, None]:
-        return self.__calc_hash__(hashlib.md5(), buffer_size)
+    def md5(self, buffer_size: int = 131072, require_update: bool = True) -> [str, None]:
+        if require_update or 'md5' not in self.metadata:
+            result = self.__calc_hash__(hashlib.md5(), buffer_size)
+            self.metadata['md5'] = result
+            return result
+        else:
+            return self.metadata['md5']
 
-    def sha1(self, buffer_size: int = 131072) -> [str, None]:
-        return self.__calc_hash__(hashlib.sha1(), buffer_size)
+    def sha1(self, buffer_size: int = 131072, require_update: bool = True) -> [str, None]:
+        if require_update or 'sha1' not in self.metadata:
+            result = self.__calc_hash__(hashlib.sha1(), buffer_size)
+            self.metadata['sha1'] = result
+            return result
+        else:
+            return self.metadata['sha1']
 
-    def sha256(self, buffer_size: int = 131072) -> [str, None]:
-        return self.__calc_hash__(hashlib.sha256(), buffer_size)
+    def sha256(self, buffer_size: int = 131072, require_update: bool = True) -> [str, None]:
+        if require_update or 'sha256' not in self.metadata:
+            result = self.__calc_hash__(hashlib.sha256(), buffer_size)
+            self.metadata['sha256'] = result
+            return result
+        else:
+            return self.metadata['sha256']
