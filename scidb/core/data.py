@@ -104,7 +104,7 @@ class Data:
             return
         shutil.copyfile(str(self.path), str(dst_path))
 
-    def __calc_hash__(self, h, buffer_size: int = 65536):
+    def __calc_hash__(self, h, buffer_size: int = 131072):
         if not self.path.exists():
             return None
         with open(str(self.path), 'rb') as file_reader:
@@ -115,11 +115,11 @@ class Data:
                 h.update(data)
         return h.hexdigest()
 
-    def md5(self, buffer_size: int = 65536) -> [str, None]:
+    def md5(self, buffer_size: int = 131072) -> [str, None]:
         return self.__calc_hash__(hashlib.md5(), buffer_size)
 
-    def sha1(self, buffer_size: int = 65536) -> [str, None]:
+    def sha1(self, buffer_size: int = 131072) -> [str, None]:
         return self.__calc_hash__(hashlib.sha1(), buffer_size)
 
-    def sha256(self, buffer_size: int = 65536) -> [str, None]:
+    def sha256(self, buffer_size: int = 131072) -> [str, None]:
         return self.__calc_hash__(hashlib.sha256(), buffer_size)
