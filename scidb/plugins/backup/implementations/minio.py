@@ -119,7 +119,12 @@ class MinioBackend(BackupBackend):
             return False
 
     def create_backup(self, verbose: bool = True, require_hash_update: bool = False) -> MinioBackupProfile:
-        profile = MinioBackupProfile(db_name=self.__db_name__, time=datetime.now())
+        profile = MinioBackupProfile(
+            db_name=self.__db_name__,
+            time=datetime.now(),
+            backup_bucket_name=self.backup_bucket_name,
+            obj_bucket_name=self.obj_bucket_name
+        )
         with open(str(profile.db_json), 'w') as fp:
             json.dump(
                 obj=db_to_json(self.__db_name__, self.__db_path__),
