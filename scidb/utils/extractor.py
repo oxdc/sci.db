@@ -50,11 +50,10 @@ def data_to_json(data: Data, results: dict, verbose: bool = True):
     results[data.name] = data.sha1()
 
 
-def recover_db(
-        db_json: Union[dict, str],
-        new_path: Union[str, Path],
-        get_file: Union[None, Callable] = None,
-        verbose: bool = True):
+def recover_db(db_json: Union[dict, str],
+               new_path: Union[str, Path],
+               get_file: Union[None, Callable] = None,
+               verbose: bool = True):
     if verbose:
         print('Recover Database to', new_path)
     if isinstance(db_json, str):
@@ -74,11 +73,10 @@ def recover_db(
     recover_buckets(db, buckets, get_file=get_file, verbose=verbose)
 
 
-def recover_buckets(
-        db: Database,
-        buckets: dict,
-        get_file: Union[None, Callable] = None,
-        verbose: bool = True):
+def recover_buckets(db: Database,
+                    buckets: dict,
+                    get_file: Union[None, Callable] = None,
+                    verbose: bool = True):
     for bucket_name, bucket_info in buckets.items():
         if verbose:
             print('Recover Bucket', bucket_name)
@@ -96,11 +94,10 @@ def recover_buckets(
         recover_data_sets(new_bucket, children, get_file=get_file, verbose=verbose)
 
 
-def recover_data_sets(
-        parent: Union[Bucket, DataSet],
-        data_sets: dict,
-        get_file: Union[None, Callable] = None,
-        verbose: bool = True):
+def recover_data_sets(parent: Union[Bucket, DataSet],
+                      data_sets: dict,
+                      get_file: Union[None, Callable] = None,
+                      verbose: bool = True):
     for data_set_name, data_set_info in data_sets.items():
         if verbose:
             print('Recover DataSet', data_set_name)
@@ -119,12 +116,11 @@ def recover_data_sets(
         recover_data(new_data_set, data, get_file=get_file, verbose=verbose)
 
 
-def recover_data(
-        data_set: DataSet,
-        data: dict,
-        file: Union[None, str, Path] = None,
-        get_file: Union[None, Callable] = None,
-        verbose: bool = True):
+def recover_data(data_set: DataSet,
+                 data: dict,
+                 file: Union[None, str, Path] = None,
+                 get_file: Union[None, Callable] = None,
+                 verbose: bool = True):
     for data_name, data_sha1 in data.items():
         if verbose:
             print('Recover DataSet', data_name)
