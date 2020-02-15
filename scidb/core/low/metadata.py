@@ -150,6 +150,9 @@ class NodeDict(Mapping):
     def __len__(self):
         return len(self.__data__)
 
+    def pop(self, key: str):
+        self.__data__.pop(key)
+
 
 class Metadata(NodeDict):
     def __init__(self,
