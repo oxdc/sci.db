@@ -137,10 +137,7 @@ class MinioBackend(BackupBackend):
                 print('Added:', data.name, data.path)
             h = data.sha1(require_update=require_hash_update)
             if h not in profile.obj_list and not self.exists_object(profile.obj_bucket_name, h):
-                profile.obj_list[h] = {
-                    'path': data.path,
-                    'metadata': data.metadata
-                }
+                profile.obj_list[h] = data.path
 
         for bucket in self.__db__.all_buckets:
             iter_data(bucket, list_data_objs, include_deleted=True)
@@ -157,14 +154,13 @@ class MinioBackend(BackupBackend):
             self.__current_profile__.name,
             str(self.__current_profile__.db_json)
         )
-        for name, info in self.__current_profile__.obj_list.items():
+        for name, path in self.__current_profile__.obj_list.items():
             if verbose:
                 print('Sync:', name)
             self.__server__.fput_object(
                 self.__current_profile__.obj_bucket_name,
                 name,
-                info['path'],
-                metadata=info['metadata']
+                path
             )
 
     def list_backups(self, db_name: Union[None, str] = None) -> List[MinioBackupProfile]:
