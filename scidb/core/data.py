@@ -2,6 +2,8 @@ import shutil
 import hashlib
 from pathlib import Path
 from typing import TextIO, BinaryIO, IO, Union
+from datetime import datetime
+from os.path import getmtime
 from .low import ObservableDict
 
 
@@ -115,26 +117,47 @@ class Data:
                 h.update(data)
         return h.hexdigest()
 
-    def md5(self, buffer_size: int = 131072, require_update: bool = True) -> [str, None]:
-        if require_update or 'md5' not in self.metadata:
+    def md5(self, buffer_size: int = 131072, require_update: bool = False) -> [str, None]:
+        if not self.path.exists():
+            return None
+        last_modified_time = getmtime(str(self.path))
+        if require_update \
+                or 'md5' not in self.metadata \
+                or 'md5-timestamp' not in self.metadata \
+                or self.metadata['md5-timestamp'] < last_modified_time:
             result = self.__calc_hash__(hashlib.md5(), buffer_size)
             self.metadata['md5'] = result
+            self.metadata['md5-timestamp'] = datetime.now().timestamp()
             return result
         else:
             return self.metadata['md5']
 
-    def sha1(self, buffer_size: int = 131072, require_update: bool = True) -> [str, None]:
-        if require_update or 'sha1' not in self.metadata:
+    def sha1(self, buffer_size: int = 131072, require_update: bool = False) -> [str, None]:
+        if not self.path.exists():
+            return None
+        last_modified_time = getmtime(str(self.path))
+        if require_update \
+                or 'sha1' not in self.metadata \
+                or 'sha1-timestamp' not in self.metadata \
+                or self.metadata['sha1-timestamp'] < last_modified_time:
             result = self.__calc_hash__(hashlib.sha1(), buffer_size)
             self.metadata['sha1'] = result
+            self.metadata['sha1-timestamp'] = datetime.now().timestamp()
             return result
         else:
             return self.metadata['sha1']
 
-    def sha256(self, buffer_size: int = 131072, require_update: bool = True) -> [str, None]:
-        if require_update or 'sha256' not in self.metadata:
+    def sha256(self, buffer_size: int = 131072, require_update: bool = False) -> [str, None]:
+        if not self.path.exists():
+            return None
+        last_modified_time = getmtime(str(self.path))
+        if require_update \
+                or 'sha256' not in self.metadata \
+                or 'sha256-timestamp' not in self.metadata \
+                or self.metadata['sha256-timestamp'] < last_modified_time:
             result = self.__calc_hash__(hashlib.sha256(), buffer_size)
             self.metadata['sha256'] = result
+            self.metadata['sha256-timestamp'] = datetime.now().timestamp()
             return result
         else:
             return self.metadata['sha256']

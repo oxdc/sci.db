@@ -4,7 +4,7 @@ from json import loads
 from pathlib import Path
 
 
-def db_to_json(db_name: str, db_path: str, verbose: bool = True):
+def db_to_json(db_name: str, db_path: str, verbose: bool = True, require_hash_update: bool = False):
     db = Database(db_name, db_path)
     if verbose:
         print('Extract Database:', db_name, '@', db_path)
@@ -19,18 +19,21 @@ def db_to_json(db_name: str, db_path: str, verbose: bool = True):
         results['buckets'][bucket.name]['properties'] = bucket.properties.data.to_dict()
         results['buckets'][bucket.name]['metadata'] = bucket.metadata.data.to_dict()
         results['buckets'][bucket.name]['children'] = dict()
-        bucket_to_json(bucket, results=results['buckets'][bucket.name]['children'], verbose=verbose)
+        bucket_to_json(bucket,
+                       results=results['buckets'][bucket.name]['children'],
+                       verbose=verbose,
+                       require_hash_update=require_hash_update)
     return results
 
 
-def bucket_to_json(bucket: Bucket, results: dict, verbose: bool = True):
+def bucket_to_json(bucket: Bucket, results: dict, verbose: bool = True, require_hash_update: bool = False):
     if verbose:
         print('Extract Bucket:', bucket.name)
     for data_set in bucket.all_data_sets:
-        data_set_to_json(data_set, results, verbose=verbose)
+        data_set_to_json(data_set, results, verbose=verbose, require_hash_update=require_hash_update)
 
 
-def data_set_to_json(data_set: DataSet, results: dict, verbose: bool = True):
+def data_set_to_json(data_set: DataSet, results: dict, verbose: bool = True, require_hash_update: bool = False):
     if verbose:
         print('Extract DataSet:', data_set.name)
     results[data_set.name] = dict()
@@ -39,15 +42,18 @@ def data_set_to_json(data_set: DataSet, results: dict, verbose: bool = True):
     results[data_set.name]['children'] = dict()
     results[data_set.name]['data'] = dict()
     for child in data_set.all_data_sets:
-        data_set_to_json(child, results[data_set.name]['children'], verbose=verbose)
+        data_set_to_json(child,
+                         results[data_set.name]['children'],
+                         verbose=verbose,
+                         require_hash_update=require_hash_update)
     for data in data_set.data:
-        data_to_json(data, results[data_set.name]['data'], verbose=verbose)
+        data_to_json(data, results[data_set.name]['data'], verbose=verbose, require_hash_update=require_hash_update)
 
 
-def data_to_json(data: Data, results: dict, verbose: bool = True):
+def data_to_json(data: Data, results: dict, verbose: bool = True, require_hash_update: bool = False):
     if verbose:
         print('Extract Data:', data.name)
-    results[data.name] = data.sha1()
+    results[data.name] = data.sha1(require_update=require_hash_update)
 
 
 def recover_db(db_json: Union[dict, str],

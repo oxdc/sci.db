@@ -127,7 +127,7 @@ class MinioBackend(BackupBackend):
         )
         with open(str(profile.db_json), 'w') as fp:
             json.dump(
-                obj=db_to_json(self.__db_name__, self.__db_path__),
+                obj=db_to_json(self.__db_name__, self.__db_path__, verbose=verbose, require_hash_update=require_hash_update),
                 fp=fp,
                 indent=2
             )
@@ -143,7 +143,7 @@ class MinioBackend(BackupBackend):
                 }
 
         for bucket in self.__db__.all_buckets:
-            iter_data(bucket, list_data_objs, include_deleted=True, )
+            iter_data(bucket, list_data_objs, include_deleted=True)
 
         self.__current_profile__ = profile
         return profile

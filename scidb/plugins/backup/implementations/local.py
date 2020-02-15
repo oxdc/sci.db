@@ -64,7 +64,7 @@ class LocalBackend(BackupBackend):
         profile.obj_path.mkdir(parents=True, exist_ok=True)
         with open(str(profile.db_json), 'w') as fp:
             json.dump(
-                obj=db_to_json(self.__db_name__, self.__db_path__),
+                obj=db_to_json(self.__db_name__, self.__db_path__, verbose=verbose, require_hash_update=require_hash_update),
                 fp=fp,
                 indent=2
             )
