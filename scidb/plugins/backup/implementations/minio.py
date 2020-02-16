@@ -11,7 +11,6 @@ from minio.error import NoSuchKey, InvalidBucketError, NoSuchBucket
 from urllib3.poolmanager import PoolManager
 from tempfile import TemporaryDirectory
 import json
-import shutil
 
 
 class MinioBackupProfile(BackupProfile):
@@ -154,9 +153,10 @@ class MinioBackend(BackupBackend):
             self.__current_profile__.name,
             str(self.__current_profile__.db_json)
         )
-        for name, path in self.__current_profile__.obj_list.items():
+        total = len(self.__current_profile__.obj_list)
+        for i, (name, path) in enumerate(self.__current_profile__.obj_list.items()):
             if verbose:
-                print('Sync:', name)
+                print(f'[{i}/{total}] Sync: {name} @ {path}')
             self.__server__.fput_object(
                 self.__current_profile__.obj_bucket_name,
                 name,
