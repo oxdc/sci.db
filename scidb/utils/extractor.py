@@ -2,6 +2,7 @@ from scidb.core import Database, Bucket, DataSet, Data
 from typing import Union, Callable
 from json import loads
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 
 def db_to_json(db_name: str, db_path: str, verbose: bool = True, require_hash_update: bool = False):
@@ -59,14 +60,15 @@ def data_to_json(data: Data, results: dict, verbose: bool = True, require_hash_u
 def recover_db(db_json: Union[dict, str],
                new_path: Union[str, Path],
                get_file: Union[None, Callable] = None,
-               verbose: bool = True):
+               verbose: bool = True,
+               overwrite: bool = False):
     if verbose:
         print('Recover Database to', new_path)
     if isinstance(db_json, str):
         db_json = loads(db_json)
     if isinstance(new_path, str):
         new_path = Path(new_path)
-    if new_path.exists():
+    if new_path.exists() and not overwrite:
         raise FileExistsError
     assert 'properties' in db_json
     properties = db_json['properties']
@@ -139,3 +141,19 @@ def recover_data(data_set: DataSet,
             print(f'WARNING: '
                   f'No file imported for data `{data_name}` with SHA1 value `{data_sha1}`. '
                   f'This may cause data loss.')
+
+
+def get_data_list(db_json: dict) -> set:
+    data_list = set()
+    temp_dir = TemporaryDirectory()
+    empty_file = Path(temp_dir.name) / 'empty.file'
+    with open(empty_file, 'w') as fp:
+        fp.write('')
+
+    def list_objs(sha1: str) -> str:
+        data_list.add(sha1)
+        return str(empty_file)
+
+    recover_db(db_json, temp_dir.name, list_objs, overwrite=True)
+    temp_dir.cleanup()
+    return data_list

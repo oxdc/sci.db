@@ -1,9 +1,9 @@
 from ..base.backend import BackupBackend
 from ..base.backup_profile import BackupProfile
 from scidb.core import Database, Data
-from scidb.utils.extractor import db_to_json, recover_db
+from scidb.utils.extractor import db_to_json, recover_db, get_data_list
 from scidb.utils.iteration import iter_data
-from typing import Tuple, List, Union
+from typing import Tuple, List, Union, Callable
 from pathlib import Path
 from datetime import datetime
 from minio import Minio
@@ -156,7 +156,7 @@ class MinioBackend(BackupBackend):
         total = len(self.__current_profile__.obj_list)
         for i, (name, path) in enumerate(self.__current_profile__.obj_list.items()):
             if verbose:
-                print(f'[{i}/{total}] Sync: {name} @ {path}')
+                print(f'[{i + 1}/{total}] Sync: {name} @ {path}')
             self.__server__.fput_object(
                 self.__current_profile__.obj_bucket_name,
                 name,
@@ -218,3 +218,28 @@ class MinioBackend(BackupBackend):
             recover_db(db_json, new_path, get_file=get_file)
 
         profile.remove_temp()
+
+    def clean_objects(self, confirm: bool = True, feedback: Union[Callable, bool] = False, verbose: bool = True):
+        if not self.__server__.bucket_exists(self.backup_bucket_name) \
+                or not self.__server__.bucket_exists(self.obj_bucket_name):
+            return
+        backups = self.__server__.list_objects(self.backup_bucket_name)
+        obj_list = set()
+        for backup in backups:
+            response = self.__server__.get_object(self.backup_bucket_name, backup.object_name)
+            data = response.read().decode('utf-8')
+            db_json = json.loads(data)
+            obj_list = obj_list.union(get_data_list(db_json))
+        objs = self.__server__.list_objects(self.obj_bucket_name)
+        useless_objs = [obj for obj in objs if obj.object_name not in obj_list]
+        total = len(useless_objs)
+        for i, obj in enumerate(useless_objs):
+            if verbose:
+                print(f'[{i + 1}/{total}] Remove: {obj.object_name}')
+            if callable(feedback):
+                r = feedback(obj, i, total)
+            else:
+                r = feedback
+            if confirm and not r:
+                continue
+            self.__server__.remove_object(self.obj_bucket_name, obj.object_name)

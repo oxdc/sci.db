@@ -1,9 +1,9 @@
 from ..base.backend import BackupBackend
 from ..base.backup_profile import BackupProfile
 from scidb.core import Database, Data
-from scidb.utils.extractor import db_to_json, recover_db
+from scidb.utils.extractor import db_to_json, recover_db, get_data_list
 from scidb.utils.iteration import iter_data
-from typing import Tuple, List, Union
+from typing import Tuple, List, Union, Callable
 from pathlib import Path
 from datetime import datetime
 import json
@@ -122,3 +122,35 @@ class LocalBackend(BackupBackend):
         with open(str(profile.db_json)) as fp:
             db_json = json.load(fp)
             recover_db(db_json, new_path, get_file=get_file)
+
+    def clean_objects(self, confirm: bool = True, feedback: Union[Callable, bool] = False, verbose: bool = True):
+        backups = [
+            child
+            for child in
+            self.__backup_path__.glob(f'db_backup_*_*.json')
+            if child.is_file()
+        ]
+        obj_list = set()
+        for backup in backups:
+            with open(str(backup), 'r') as fp:
+                db_json = json.load(fp)
+                obj_list = obj_list.union(get_data_list(db_json))
+        obj_path = self.__backup_path__ / 'objects'
+        objs = [
+            child
+            for child in
+            obj_path.glob('*')
+            if child.is_file()
+        ]
+        useless_objs = [obj for obj in objs if obj.name not in obj_list]
+        total = len(useless_objs)
+        for i, obj in enumerate(useless_objs):
+            if verbose:
+                print(f'[{i + 1}/{total}] Remove: {obj.name}')
+            if callable(feedback):
+                r = feedback(obj, i, total)
+            else:
+                r = feedback
+            if confirm and not r:
+                continue
+            obj.unlink()
