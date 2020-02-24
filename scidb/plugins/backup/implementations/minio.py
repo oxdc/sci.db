@@ -98,7 +98,7 @@ class MinioBackend(BackupBackend):
         if not self.__server__.bucket_exists(self.__current_profile__.backup_bucket_name):
             self.__server__.make_bucket(self.__current_profile__.backup_bucket_name)
         return self.__server__.bucket_exists(self.__current_profile__.obj_bucket_name) \
-            and self.__server__.bucket_exists(self.__current_profile__.backup_bucket_name)
+               and self.__server__.bucket_exists(self.__current_profile__.backup_bucket_name)
 
     def ping(self) -> Union[bool, Tuple[bool, float]]:
         return True
@@ -126,16 +126,24 @@ class MinioBackend(BackupBackend):
         )
         with open(str(profile.db_json), 'w') as fp:
             json.dump(
-                obj=db_to_json(self.__db_name__, self.__db_path__, verbose=verbose, require_hash_update=require_hash_update),
+                obj=db_to_json(self.__db_name__,
+                               self.__db_path__,
+                               verbose=verbose,
+                               require_hash_update=require_hash_update),
                 fp=fp,
                 indent=2
             )
 
+        if verbose:
+            print('List remote objects.')
+        remote_objs = [obj.object_name for obj in self.__server__.list_objects(profile.obj_bucket_name)]
+        print(f'Found {len(remote_objs)} objects on remote server.')
+
         def list_data_objs(data: Data):
-            if verbose:
-                print('Added:', data.name, data.path)
             h = data.sha1(require_update=require_hash_update)
-            if h not in profile.obj_list and not self.exists_object(profile.obj_bucket_name, h):
+            if h not in profile.obj_list and h not in remote_objs:
+                if verbose:
+                    print('Added:', data.name, data.path)
                 profile.obj_list[h] = data.path
 
         for bucket in self.__db__.all_buckets:
