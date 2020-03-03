@@ -9,6 +9,7 @@ class DataSet(Node):
     def __init__(self,
                  data_set_name: str,
                  parent,
+                 bucket,
                  uuid: Union[None, str, UUID] = None,
                  deleted: Union[None, bool] = None,
                  metadata: Union[None, Metadata] = None,
@@ -24,23 +25,28 @@ class DataSet(Node):
             metadata=metadata,
             properties=properties
         )
+        self.__bucket__ = bucket
         self.init_data_sets()
         self.init_data()
+
+    @property
+    def bucket(self):
+        return self.__bucket__
 
     def init_data_sets(self):
         children = filter(lambda child: child.is_dir(), self.path.iterdir())
         for data_set in children:
-            self.__data_sets__.add(DataSet(data_set.name, self))
+            self.__data_sets__.add(DataSet(data_set.name, parent=self, bucket=self.__bucket__))
 
     def init_data(self):
         children = filter(lambda child: child.is_file() and child.name not in self.RESERVED_NAMES, self.path.iterdir())
         for data in children:
-            self.__data__.add(Data(data.name, self))
+            self.__data__.add(Data(data.name, parent=self, bucket=self.__bucket__))
 
     def add_data_set(self, name: str) -> 'DataSet':
         if self.get_data_set(name, include_deleted=True) is not None:
             raise FileExistsError
-        new_data_set = DataSet(data_set_name=name, parent=self)
+        new_data_set = DataSet(data_set_name=name, parent=self, bucket=self.__bucket__)
         self.__data_sets__.add(new_data_set)
         return new_data_set
 
@@ -73,7 +79,7 @@ class DataSet(Node):
     def add_data(self, name: str) -> Data:
         if self.get_data(name) is not None:
             raise FileExistsError
-        new_data = Data(data_name=name, parent=self)
+        new_data = Data(data_name=name, parent=self, bucket=self.__bucket__)
         self.__data__.add(new_data)
         return new_data
 

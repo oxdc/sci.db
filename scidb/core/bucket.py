@@ -28,12 +28,12 @@ class Bucket(Node):
     def init_data_sets(self):
         children = filter(lambda child: child.is_dir(), self.path.iterdir())
         for data_set in children:
-            self.__data_sets__.add(DataSet(data_set.name, self))
+            self.__data_sets__.add(DataSet(data_set.name, parent=self, bucket=self))
 
     def add_data_set(self, name: str) -> DataSet:
         if self.get_data_set(name, include_deleted=True) is not None:
             raise FileExistsError
-        new_data_set = DataSet(data_set_name=name, parent=self)
+        new_data_set = DataSet(data_set_name=name, parent=self, bucket=self)
         self.__data_sets__.add(new_data_set)
         return new_data_set
 

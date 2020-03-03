@@ -8,11 +8,16 @@ from .low import ObservableDict
 
 
 class Data:
-    def __init__(self, data_name: str, parent):
+    def __init__(self, data_name: str, parent, bucket):
         self.__data_name__ = data_name
         self.__parent__ = parent
+        self.__bucket__ = bucket
         self.init_metadata()
         self.init_properties()
+
+    @property
+    def bucket(self):
+        return self.__bucket__
 
     def init_metadata(self):
         if self.__data_name__ not in self.__parent__.metadata:
