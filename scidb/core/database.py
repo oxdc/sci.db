@@ -7,22 +7,55 @@ from time import process_time
 class Database(Root):
     def __init__(self, name: str, path: str, version: str = 'alpha1', verbose: bool = True):
         if verbose:
-            print(f'SciDB {version}: Loading database {name} @ {path} ...')
-            start = process_time()
+            print(f"[SciDB {version}] Loading database '{name}' @ {path} ...")
+        start = process_time()
         self.__db_name__ = name
         self.__db_version__ = version
         self.__buckets__ = set()
+        self.__bucket_count__ = 0
+        self.__data_set_count__ = 0
+        self.__data_count__ = 0
+        self.__protected_methods__ = {
+            'increase_bucket_count': self.__increase_bucket_count__,
+            'increase_data_set_count': self.__increase_data_set_count__,
+            'increase_data_count': self.__increase_data_count__
+        }
         super().__init__(path)
         self.init_storage()
         self.init_buckets()
+        end = process_time()
         if verbose:
-            end = process_time()
-            print(f'SciDB {version}: Loaded database {name} in {end - start: .2f} seconds.')
+            print(f"[SciDB {version}] Loaded database '{name}' "
+                  f"with {self.__bucket_count__} buckets, "
+                  f"{self.__data_set_count__} data sets "
+                  f"and {self.__data_count__} data files "
+                  f"in {end - start: .2f} seconds.")
+
+    @property
+    def bucket_count(self):
+        return self.__bucket_count__
+
+    def __increase_bucket_count__(self):
+        self.__bucket_count__ += 1
+
+    @property
+    def data_set_count(self):
+        return self.__data_set_count__
+
+    def __increase_data_set_count__(self):
+        self.__data_set_count__ += 1
+
+    @property
+    def data_count(self):
+        return self.__data_count__
+
+    def __increase_data_count__(self):
+        self.__data_count__ += 1
 
     def init_buckets(self):
         children = filter(lambda child: child.is_dir(), self.path.iterdir())
         for bucket in children:
-            self.__buckets__.add(Bucket(bucket.name, self))
+            self.__buckets__.add(Bucket(bucket.name, self, protected_parent_methods=self.__protected_methods__))
 
     @property
     def name(self) -> str:
@@ -50,7 +83,7 @@ class Database(Root):
     def add_bucket(self, name: str) -> Bucket:
         if self.get_bucket(name, include_deleted=True) is not None:
             raise FileExistsError
-        new_bucket = Bucket(bucket_name=name, parent=self)
+        new_bucket = Bucket(bucket_name=name, parent=self, protected_parent_methods=self.__protected_methods__)
         self.__buckets__.add(new_bucket)
         return new_bucket
 

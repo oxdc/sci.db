@@ -13,11 +13,13 @@ class Node:
                  uuid: Union[None, UUID] = None,
                  deleted: Union[None, bool] = None,
                  metadata: Union[None, dict, Metadata] = None,
-                 properties: Union[None, dict, Properties] = None):
+                 properties: Union[None, dict, Properties] = None,
+                 protected_parent_methods: Union[None, dict] = None):
         self.__node_name__ = node_name
         self.__node_type__ = node_type
         self.__parent__ = parent
         self.__uuid__ = str(uuid) if uuid else str(uuid4())
+        self.__protected_parent_methods__ = protected_parent_methods
         self.init_storage()
         if isinstance(metadata, Metadata):
             self.metadata = metadata

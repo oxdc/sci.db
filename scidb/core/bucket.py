@@ -12,7 +12,8 @@ class Bucket(Node):
                  uuid: Union[None, str, UUID] = None,
                  deleted: Union[None, bool] = None,
                  metadata: Union[None, Metadata] = None,
-                 properties: Union[None, Properties] = None):
+                 properties: Union[None, Properties] = None,
+                 protected_parent_methods: Union[None, dict] = None):
         self.__data_sets__ = set()
         super().__init__(
             node_name=bucket_name,
@@ -21,19 +22,31 @@ class Bucket(Node):
             uuid=uuid,
             deleted=deleted,
             metadata=metadata,
-            properties=properties
+            properties=properties,
+            protected_parent_methods=protected_parent_methods
         )
+        self.__protected_parent_methods__['increase_bucket_count']()
         self.init_data_sets()
+
+    @property
+    def database(self):
+        return self.parent
+
+    @property
+    def db(self):
+        return self.parent
 
     def init_data_sets(self):
         children = filter(lambda child: child.is_dir(), self.path.iterdir())
         for data_set in children:
-            self.__data_sets__.add(DataSet(data_set.name, parent=self, bucket=self))
+            self.__data_sets__.add(DataSet(data_set.name, parent=self, bucket=self,
+                                           protected_parent_methods=self.__protected_parent_methods__))
 
     def add_data_set(self, name: str) -> DataSet:
         if self.get_data_set(name, include_deleted=True) is not None:
             raise FileExistsError
-        new_data_set = DataSet(data_set_name=name, parent=self, bucket=self)
+        new_data_set = DataSet(data_set_name=name, parent=self,
+                               bucket=self, protected_parent_methods=self.__protected_parent_methods__)
         self.__data_sets__.add(new_data_set)
         return new_data_set
 

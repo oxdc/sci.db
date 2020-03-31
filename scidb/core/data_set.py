@@ -13,7 +13,8 @@ class DataSet(Node):
                  uuid: Union[None, str, UUID] = None,
                  deleted: Union[None, bool] = None,
                  metadata: Union[None, Metadata] = None,
-                 properties: Union[None, Properties] = None):
+                 properties: Union[None, Properties] = None,
+                 protected_parent_methods: Union[None, dict] = None):
         self.__data_sets__ = set()
         self.__data__ = set()
         super().__init__(
@@ -23,11 +24,21 @@ class DataSet(Node):
             uuid=uuid,
             deleted=deleted,
             metadata=metadata,
-            properties=properties
+            properties=properties,
+            protected_parent_methods=protected_parent_methods
         )
+        self.__protected_parent_methods__['increase_data_set_count']()
         self.__bucket__ = bucket
         self.init_data_sets()
         self.init_data()
+
+    @property
+    def database(self):
+        return self.__bucket__.db
+
+    @property
+    def db(self):
+        return self.__bucket__.db
 
     @property
     def bucket(self):
@@ -36,17 +47,20 @@ class DataSet(Node):
     def init_data_sets(self):
         children = filter(lambda child: child.is_dir(), self.path.iterdir())
         for data_set in children:
-            self.__data_sets__.add(DataSet(data_set.name, parent=self, bucket=self.__bucket__))
+            self.__data_sets__.add(DataSet(data_set.name, parent=self, bucket=self.__bucket__,
+                                           protected_parent_methods=self.__protected_parent_methods__))
 
     def init_data(self):
         children = filter(lambda child: child.is_file() and child.name not in self.RESERVED_NAMES, self.path.iterdir())
         for data in children:
-            self.__data__.add(Data(data.name, parent=self, bucket=self.__bucket__))
+            self.__data__.add(Data(data.name, parent=self, bucket=self.__bucket__,
+                                   protected_parent_methods=self.__protected_parent_methods__))
 
     def add_data_set(self, name: str) -> 'DataSet':
         if self.get_data_set(name, include_deleted=True) is not None:
             raise FileExistsError
-        new_data_set = DataSet(data_set_name=name, parent=self, bucket=self.__bucket__)
+        new_data_set = DataSet(data_set_name=name, parent=self, bucket=self.__bucket__,
+                               protected_parent_methods=self.__protected_parent_methods__)
         self.__data_sets__.add(new_data_set)
         return new_data_set
 
@@ -79,7 +93,8 @@ class DataSet(Node):
     def add_data(self, name: str) -> Data:
         if self.get_data(name) is not None:
             raise FileExistsError
-        new_data = Data(data_name=name, parent=self, bucket=self.__bucket__)
+        new_data = Data(data_name=name, parent=self, bucket=self.__bucket__,
+                        protected_parent_methods=self.__protected_parent_methods__)
         self.__data__.add(new_data)
         return new_data
 

@@ -8,12 +8,23 @@ from .low import ObservableDict
 
 
 class Data:
-    def __init__(self, data_name: str, parent, bucket):
+    def __init__(self, data_name: str, parent, bucket,
+                 protected_parent_methods: Union[None, dict] = None):
         self.__data_name__ = data_name
         self.__parent__ = parent
         self.__bucket__ = bucket
+        self.__protected_parent_methods__ = protected_parent_methods
+        self.__protected_parent_methods__['increase_data_count']()
         self.init_metadata()
         self.init_properties()
+
+    @property
+    def database(self):
+        return self.__bucket__.db
+
+    @property
+    def db(self):
+        return self.__bucket__.db
 
     @property
     def bucket(self):
