@@ -1,16 +1,23 @@
 from .low.node import Root
 from .bucket import Bucket
 from typing import Set
+from time import process_time
 
 
 class Database(Root):
-    def __init__(self, name: str, path: str, version: str = 'alpha1'):
+    def __init__(self, name: str, path: str, version: str = 'alpha1', verbose: bool = True):
+        if verbose:
+            print(f'SciDB {version}: Loading database {name} @ {path} ...')
+            start = process_time()
         self.__db_name__ = name
         self.__db_version__ = version
         self.__buckets__ = set()
         super().__init__(path)
         self.init_storage()
         self.init_buckets()
+        if verbose:
+            end = process_time()
+            print(f'SciDB {version}: Loaded database {name} in {end - start: .2f} seconds.')
 
     def init_buckets(self):
         children = filter(lambda child: child.is_dir(), self.path.iterdir())
