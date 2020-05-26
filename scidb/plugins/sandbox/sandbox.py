@@ -42,41 +42,41 @@ class SandboxManager:
     def list_sandbox(self) -> Set[Bucket]:
         return self.sandboxes
 
-    def clear_sandbox(self, name: str, conform: bool = True, feedback: bool = False):
-        if conform and not feedback:
+    def clear_sandbox(self, name: str, confirm: bool = True, feedback: bool = False):
+        if confirm and not feedback:
             return
-        self.delete_sandbox(name, conform, feedback)
+        self.delete_sandbox(name, confirm, feedback)
         self.create_sandbox(name)
 
-    def delete_sandbox(self, name: str, conform: bool = True, feedback: bool = False):
-        if conform and not feedback:
+    def delete_sandbox(self, name: str, confirm: bool = True, feedback: bool = False):
+        if confirm and not feedback:
             return
         sandbox = self.get_sandbox(name, include_deleted=True)
         if sandbox is None:
             raise FileNotFoundError
         else:
             sandbox.delete()
-            self.__db__.clear_trash(conform, feedback)
+            self.__db__.clear_trash(confirm, feedback)
 
-    def delete_all_sandboxes(self, conform: bool = True, feedback: bool = False):
-        if conform and not feedback:
+    def delete_all_sandboxes(self, confirm: bool = True, feedback: bool = False):
+        if confirm and not feedback:
             return
         for sandbox in self.sandboxes:
             sandbox.delete()
-            sandbox.clear_trash(conform, feedback)
+            sandbox.clear_trash(confirm, feedback)
 
     def migrate_sandbox(self,
                         name: str,
                         destination: Union[Bucket, DataSet],
                         delete_source: bool = True,
                         allow_overwrite: bool = False,
-                        conform: bool = True,
+                        confirm: bool = True,
                         feedback: bool = False,
                         verbose: bool = True):
-        if conform and not feedback:
+        if confirm and not feedback:
             return
         sandbox = self.get_sandbox(name, include_deleted=True)
         if sandbox is None:
             raise FileNotFoundError
         for data_set in sandbox.all_data_sets:
-            migrate(data_set, destination, delete_source, allow_overwrite, conform, feedback, verbose)
+            migrate(data_set, destination, delete_source, allow_overwrite, confirm, feedback, verbose)

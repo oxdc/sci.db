@@ -124,13 +124,13 @@ class DataSet(Node):
             target.path.unlink()
         self.__data__.remove(target)
 
-    def clear_trash(self, conform: bool = True, feedback: bool = False):
-        if conform and not feedback:
+    def clear_trash(self, confirm: bool = True, feedback: bool = False):
+        if confirm and not feedback:
             return
         for data_set in self.trash:
-            data_set.purge_storage(conform, feedback)
+            data_set.purge_storage(confirm, feedback)
         for data_set in self.data_sets:
-            data_set.clear_trash(conform, feedback)
+            data_set.clear_trash(confirm, feedback)
         self.__data_sets__ = set(self.data_sets)
 
     @property

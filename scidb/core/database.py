@@ -113,13 +113,13 @@ class Database(Root):
             raise AssertionError
         return target
 
-    def clear_trash(self, conform: bool = True, feedback: bool = False):
-        if conform and not feedback:
+    def clear_trash(self, confirm: bool = True, feedback: bool = False):
+        if confirm and not feedback:
             return
         for bucket in self.trash:
-            bucket.purge_storage(conform, feedback)
+            bucket.purge_storage(confirm, feedback)
         for bucket in self.buckets:
-            bucket.clear_trash(conform, feedback)
+            bucket.clear_trash(confirm, feedback)
         self.__buckets__ = set(self.buckets)
 
     def init_storage(self):
